@@ -1,58 +1,102 @@
-"""Graph agent: calls the graph service for relationship intelligence."""
+"""Graph Intelligence Agent — calls the graph service for relationship data."""
+
 from __future__ import annotations
 
-import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
-
-from .base import BaseAgent
-from ..models import AgentResult
+from pydantic import BaseModel
 
 
-class GraphAgent(BaseAgent):
-    def __init__(self, graph_service_url: str, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        self._graph_url = graph_service_url
+class GraphRelationship(BaseModel):
+    source_ticker: str
+    target_ticker: str | None
+    target_name: str
+    rel_type: str
+    weight: float
+    direction: str
+    as_of: str
 
-    async def _graph_get(self, path: str) -> dict[str, Any]:
-        try:
-            async with httpx.AsyncClient() as client:
-                res = await client.get(f"{self._graph_url}{path}", timeout=10.0)
-            return res.json() if res.status_code == 200 else {}
-        except httpx.RequestError:
-            return {}
 
-    async def _graph_post(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
-        try:
-            async with httpx.AsyncClient() as client:
-                res = await client.post(f"{self._graph_url}{path}", json=body, timeout=10.0)
-            return res.json() if res.status_code == 200 else {}
-        except httpx.RequestError:
-            return {}
+class GraphData(BaseModel):
+    ticker: str
+    relationships: list[GraphRelationship]
+    supply_chain_depth: int
+    hidden_concentration: list[dict[str, Any]]
+    as_of: str
+    warnings: list[str]
 
-    async def run(self, ticker: str, portfolio_tickers: list[str] | None = None) -> AgentResult:  # type: ignore[override]
-        today = datetime.date.today().isoformat()
+
+class AgentResult(BaseModel):
+    data: GraphData
+    sources: list[str]
+    as_of: str
+    warnings: list[str]
+
+
+class GraphAgent:
+    def __init__(self, graph_url: str) -> None:
+        self._url = graph_url
+
+    async def run(
+        self,
+        ticker: str,
+        portfolio_tickers: list[str],
+        client: httpx.AsyncClient,
+    ) -> AgentResult:
         warnings: list[str] = []
+        now = datetime.now(timezone.utc).isoformat()
+        relationships: list[GraphRelationship] = []
+        hidden: list[dict[str, Any]] = []
+        supply_chain_depth = 0
 
-        relationships = await self._graph_get(f"/relationships/{ticker}")
-        supply_chain = await self._graph_get(f"/supply-chain/{ticker}")
+        # Direct relationships
+        try:
+            resp = await client.get(f"{self._url}/relationships/{ticker}", timeout=10.0)
+            if resp.status_code == 200:
+                payload = resp.json()
+                raw_rels: list[dict[str, Any]] = payload.get("data", [])
+                for r in raw_rels:
+                    relationships.append(GraphRelationship(
+                        source_ticker=ticker,
+                        target_ticker=r.get("target"),
+                        target_name=r.get("name", ""),
+                        rel_type=r.get("type", "UNKNOWN"),
+                        weight=float(r.get("weight", 0)),
+                        direction=r.get("direction", "lateral"),
+                        as_of=r.get("as_of", now),
+                    ))
+            else:
+                warnings.append(f"Graph relationships unavailable: HTTP {resp.status_code}")
+        except httpx.RequestError as e:
+            warnings.append(f"Graph service unreachable: {e}")
 
-        hidden: dict[str, Any] = {}
-        if portfolio_tickers and len(portfolio_tickers) >= 2:
-            hidden = await self._graph_post("/hidden-concentration", {"tickers": portfolio_tickers})
+        # Supply chain depth
+        supply_tickers = [r for r in relationships if r.rel_type == "SUPPLIES"]
+        supply_chain_depth = len(supply_tickers)
 
-        if not relationships and not supply_chain:
-            warnings.append(f"No graph relationships found for {ticker}")
+        # Hidden concentration across portfolio
+        if len(portfolio_tickers) >= 2:
+            try:
+                hc_resp = await client.post(
+                    f"{self._url}/hidden-concentration",
+                    json={"tickers": portfolio_tickers},
+                    timeout=10.0,
+                )
+                if hc_resp.status_code == 200:
+                    hidden = hc_resp.json().get("data", [])
+                else:
+                    warnings.append(f"Hidden concentration unavailable: HTTP {hc_resp.status_code}")
+            except httpx.RequestError as e:
+                warnings.append(f"Graph service unreachable for hidden concentration: {e}")
 
-        return AgentResult(
-            data={
-                "ticker": ticker,
-                "relationships": relationships.get("data", []),
-                "supply_chain": supply_chain.get("data", []),
-                "hidden_concentration": hidden.get("data", []),
-            },
-            sources=[f"graph_service:{ticker}"],
-            as_of=relationships.get("as_of", today) or today,
+        data = GraphData(
+            ticker=ticker,
+            relationships=relationships,
+            supply_chain_depth=supply_chain_depth,
+            hidden_concentration=hidden,
+            as_of=now,
             warnings=warnings,
         )
+        return AgentResult(data=data, sources=["graph_service"], as_of=now, warnings=warnings)

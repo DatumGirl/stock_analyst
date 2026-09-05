@@ -1,5 +1,5 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { orchestratorApi, quantApi, graphApi } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { orchestratorApi, graphApi } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import type { TickerAnalysis, CompareAnalysis, ApiOk, Ticker, QuoteSnapshot } from '@/lib/types';
 
@@ -68,6 +68,84 @@ export function useRelationships(symbol: string) {
     queryKey: ['relationships', symbol],
     queryFn: () => graphApi.relationships(symbol),
     enabled: !!symbol,
-    staleTime: 60 * 60 * 1000,   // graph data changes infrequently
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
+// ─── Watchlist ────────────────────────────────────────────────────────────────
+
+export interface WatchlistStatus {
+  isWatchlisted: boolean;
+  itemId: string | null;
+  watchlistId: string | null;
+}
+
+export function useWatchlistStatus(symbol: string, userId: string | undefined) {
+  return useQuery<WatchlistStatus, Error>({
+    queryKey: ['watchlist-status', symbol, userId],
+    queryFn: async () => {
+      const { data: lists } = await supabase
+        .from('watchlists')
+        .select('id')
+        .eq('user_id', userId!);
+
+      if (!lists?.length) return { isWatchlisted: false, itemId: null, watchlistId: null };
+
+      const ids = lists.map((l: { id: string }) => l.id);
+      const { data: items } = await supabase
+        .from('watchlist_items')
+        .select('id, watchlist_id')
+        .eq('ticker', symbol)
+        .in('watchlist_id', ids)
+        .limit(1);
+
+      return {
+        isWatchlisted: (items?.length ?? 0) > 0,
+        itemId: (items?.[0] as any)?.id ?? null,
+        watchlistId: lists[0].id,
+      };
+    },
+    enabled: !!symbol && !!userId,
+    staleTime: 60_000,
+  });
+}
+
+export function useToggleWatchlist(symbol: string, userId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation<boolean, Error, WatchlistStatus>({
+    mutationFn: async ({ isWatchlisted, itemId, watchlistId }) => {
+      if (isWatchlisted && itemId) {
+        await supabase.from('watchlist_items').delete().eq('id', itemId);
+        return false;
+      }
+
+      let wlId = watchlistId;
+      if (!wlId) {
+        const { data: existing } = await supabase
+          .from('watchlists')
+          .select('id')
+          .eq('user_id', userId!)
+          .limit(1);
+        if ((existing as any)?.[0]) {
+          wlId = (existing as any)[0].id;
+        } else {
+          const { data: created } = await supabase
+            .from('watchlists')
+            .insert({ user_id: userId!, name: 'Watchlist' })
+            .select('id')
+            .single();
+          wlId = (created as any)?.id ?? null;
+        }
+      }
+
+      if (!wlId) throw new Error('Could not resolve watchlist');
+      await supabase
+        .from('watchlist_items')
+        .insert({ watchlist_id: wlId, ticker: symbol, added_at: new Date().toISOString() });
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist-status', symbol, userId] });
+    },
   });
 }

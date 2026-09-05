@@ -1,0 +1,78 @@
+services:
+  quant:
+    build: ./quant
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    volumes:
+      - ./quant:/app
+    command: uvicorn quant_engine.api:app --host 0.0.0.0 --port 8001 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  orchestrator:
+    build: ./orchestrator
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - QUANT_URL=http://quant:8001
+      - GRAPH_URL=http://graph:8003
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    volumes:
+      - ./orchestrator:/app
+    depends_on:
+      quant:
+        condition: service_healthy
+      graph:
+        condition: service_healthy
+    command: uvicorn orchestrator.api:app --host 0.0.0.0 --port 8002 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  graph:
+    build: ./graph
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - MEMGRAPH_HOST=memgraph
+      - MEMGRAPH_PORT=7687
+    volumes:
+      - ./graph:/app
+    depends_on:
+      memgraph:
+        condition: service_healthy
+    command: uvicorn graph_service.api:app --host 0.0.0.0 --port 8003 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  memgraph:
+    image: memgraph/memgraph:latest
+    ports:
+      - "7687:7687"
+      - "7444:7444"
+    volumes:
+      - memgraph_data:/var/lib/memgraph
+    healthcheck:
+      test: ["CMD", "mg_client", "--execute", "RETURN 1;"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  memgraph_data:

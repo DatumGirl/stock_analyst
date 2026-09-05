@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { quantApi } from '@/lib/api';
-import type { PortfolioSnapshot, PortfolioChange, Position } from '@/lib/types';
+import { quantApi, orchestratorApi } from '@/lib/api';
+import type { PortfolioSnapshot, PortfolioChange, Position, PortfolioContribution, ApiOk } from '@/lib/types';
 
 export function usePortfolioSnapshot(portfolioId: string | null) {
   return useQuery<PortfolioSnapshot | null, Error>({
@@ -15,7 +15,6 @@ export function usePortfolioSnapshot(portfolioId: string | null) {
         .limit(1)
         .single();
 
-      // No snapshot yet — trigger computation then return the new row
       if (!data) {
         await quantApi.computeSnapshot(portfolioId!).catch(() => null);
         const { data: fresh } = await supabase
@@ -68,5 +67,52 @@ export function usePositions(portfolioId: string | null) {
     },
     enabled: !!portfolioId,
     staleTime: 30_000,
+  });
+}
+
+// ─── Period history ───────────────────────────────────────────────────────────
+
+type HistoryRow = { date: string; total_value: string; day_return: number };
+
+export type HistoryPeriod = '1W' | '1M' | 'YTD' | '1Y';
+
+export function usePortfolioHistory(portfolioId: string | null, period: HistoryPeriod) {
+  return useQuery<HistoryRow[], Error>({
+    queryKey: ['portfolio-history', portfolioId, period],
+    queryFn: async () => {
+      const today = new Date();
+      let from: Date;
+      if (period === '1W') {
+        from = new Date(today); from.setDate(today.getDate() - 7);
+      } else if (period === '1M') {
+        from = new Date(today); from.setMonth(today.getMonth() - 1);
+      } else if (period === 'YTD') {
+        from = new Date(today.getFullYear(), 0, 1);
+      } else {
+        from = new Date(today); from.setFullYear(today.getFullYear() - 1);
+      }
+      const fromStr = from.toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('portfolio_snapshots')
+        .select('date, total_value, day_return')
+        .eq('portfolio_id', portfolioId!)
+        .gte('date', fromStr)
+        .order('date', { ascending: true });
+      return (data ?? []) as HistoryRow[];
+    },
+    enabled: !!portfolioId,
+    staleTime: 60_000,
+  });
+}
+
+// ─── Portfolio contribution / fit check ───────────────────────────────────────
+
+export function usePortfolioFitCheck(ticker: string, portfolioId: string | null) {
+  return useMutation<ApiOk<PortfolioContribution>, Error, void>({
+    mutationFn: () =>
+      orchestratorApi.portfolioContribution(
+        ticker,
+        portfolioId!,
+      ) as Promise<ApiOk<PortfolioContribution>>,
   });
 }

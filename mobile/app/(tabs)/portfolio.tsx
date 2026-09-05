@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
-  useColorScheme, Pressable,
+  useColorScheme, Pressable, Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import { useAuthStore } from '@/stores/authStore';
 import { usePortfolioStore } from '@/stores/portfolioStore';
-import { usePortfolioSnapshot, useWhatChanged, usePositions } from '@/hooks/usePortfolio';
+import { usePortfolioSnapshot, useWhatChanged, usePositions, usePortfolioHistory } from '@/hooks/usePortfolio';
+import type { HistoryPeriod } from '@/hooks/usePortfolio';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { DeltaLabel } from '@/components/ui/DeltaLabel';
 import { MaterialityRow } from '@/components/ui/MaterialityRow';
@@ -17,8 +19,64 @@ import { SkeletonGroup } from '@/components/ui/SkeletonCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Colors } from '@/constants/Colors';
 import { FontSize, FontWeight, Spacing, Radius } from '@/constants/Theme';
+import type { RiskMetrics } from '@/lib/types';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CHART_W = SCREEN_WIDTH - Spacing.lg * 2 - Spacing.lg * 2; // card padding both sides
 
 const PERIOD_OPTIONS = ['1D', '1W', '1M', 'YTD', '1Y'] as const;
+type PeriodOption = typeof PERIOD_OPTIONS[number];
+
+function buildSparkPath(values: number[], w: number, h: number): string {
+  if (values.length < 2) return '';
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const pad = 4;
+  const pts = values.map((v, i) => ({
+    x: pad + (i / (values.length - 1)) * (w - pad * 2),
+    y: pad + (1 - (v - min) / range) * (h - pad * 2),
+  }));
+  return pts.reduce((d, p, i) => d + (i === 0 ? `M${p.x},${p.y}` : ` L${p.x},${p.y}`), '');
+}
+
+function RiskMetricsCard({ metrics, colors }: { metrics: RiskMetrics; colors: typeof Colors.dark }) {
+  const rows: Array<{ label: string; value: string | null }> = [
+    { label: 'VaR 95%', value: metrics.var_95 != null ? `${(metrics.var_95 * 100).toFixed(2)}%` : null },
+    { label: 'CVaR 95%', value: metrics.cvar_95 != null ? `${(metrics.cvar_95 * 100).toFixed(2)}%` : null },
+    { label: 'Beta', value: metrics.beta != null ? metrics.beta.toFixed(2) : null },
+    { label: 'Volatility 30d', value: metrics.volatility_30d != null ? `${(metrics.volatility_30d * 100).toFixed(1)}%` : null },
+    { label: 'Max Drawdown', value: metrics.max_drawdown != null ? `${(metrics.max_drawdown * 100).toFixed(1)}%` : null },
+    { label: 'Sharpe', value: metrics.sharpe != null ? metrics.sharpe.toFixed(2) : null },
+    { label: 'Sortino', value: metrics.sortino != null ? metrics.sortino.toFixed(2) : null },
+  ].filter((r) => r.value !== null);
+
+  if (!rows.length) return null;
+
+  return (
+    <View style={[riskStyles.card, { backgroundColor: colors.card }]}>
+      {rows.map((row, i) => (
+        <View
+          key={row.label}
+          style={[
+            riskStyles.row,
+            { borderBottomColor: colors.border, borderBottomWidth: i < rows.length - 1 ? 1 : 0 },
+          ]}
+        >
+          <Text style={[riskStyles.label, { color: colors.textSecondary }]}>{row.label}</Text>
+          <Text style={[riskStyles.value, { color: colors.textPrimary }]}>{row.value}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const riskStyles = StyleSheet.create({
+  card: { borderRadius: Radius.lg, overflow: 'hidden' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg },
+  label: { fontSize: FontSize.sm },
+  value: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, fontVariant: ['tabular-nums'] },
+});
 
 export default function PortfolioScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -28,7 +86,7 @@ export default function PortfolioScreen() {
   const { user } = useAuthStore();
   const { portfolios, activePortfolioId, loadPortfolios, setActivePortfolio } = usePortfolioStore();
 
-  const [activePeriod, setActivePeriod] = useState<(typeof PERIOD_OPTIONS)[number]>('1D');
+  const [activePeriod, setActivePeriod] = useState<PeriodOption>('1D');
   const [exposureTab, setExposureTab] = useState<'Sector' | 'Geography' | 'Theme' | 'Hidden'>('Sector');
   const [showSwitcher, setShowSwitcher] = useState(false);
 
@@ -40,15 +98,32 @@ export default function PortfolioScreen() {
   const { data: changes, isLoading: changesLoading } = useWhatChanged(activePortfolioId);
   const { data: positions } = usePositions(activePortfolioId);
 
+  const historyPeriod: HistoryPeriod = activePeriod === '1D' ? '1W' : activePeriod;
+  const { data: history } = usePortfolioHistory(activePortfolioId, historyPeriod);
+
   const isLoading = snapLoading || changesLoading;
 
-  // Handle both nested ({sector: {...}}) and legacy flat ({Technology: 0.45}) structures
+  const periodReturn = useMemo(() => {
+    if (activePeriod === '1D') return snapshot?.day_return ?? 0;
+    if (!history?.length) return snapshot?.period_return ?? 0;
+    const first = parseFloat(history[0].total_value);
+    const last = parseFloat(history[history.length - 1].total_value);
+    return first !== 0 ? (last - first) / first : 0;
+  }, [activePeriod, history, snapshot]);
+
+  const sparkValues = useMemo(() => {
+    if (activePeriod === '1D' || !history?.length) return [];
+    return history.map((r) => parseFloat(r.total_value));
+  }, [activePeriod, history]);
+
   const rawExp = snapshot?.exposures as any;
   const exposures = rawExp != null
     ? (typeof rawExp.sector === 'object'
         ? rawExp[exposureTab.toLowerCase() as 'sector' | 'geography' | 'theme']
         : exposureTab === 'Sector' ? rawExp : undefined)
     : undefined;
+
+  const sparkPositive = periodReturn >= 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -60,7 +135,6 @@ export default function PortfolioScreen() {
       >
         {/* Header */}
         <View style={styles.nav}>
-          {/* Portfolio name / switcher */}
           <Pressable style={styles.namePill} onPress={() => setShowSwitcher(true)}>
             <Text style={[styles.navTitle, { color: colors.textPrimary }]} numberOfLines={1}>
               {portfolios.find((p) => p.id === activePortfolioId)?.name ?? 'Portfolio'}
@@ -81,7 +155,6 @@ export default function PortfolioScreen() {
             </Pressable>
           </View>
         </View>
-
 
         {/* Period selector */}
         <View style={styles.periodRow}>
@@ -113,14 +186,33 @@ export default function PortfolioScreen() {
 
         {snapshot && (
           <>
-            {/* Value + change */}
+            {/* Value + period return */}
             <View style={[styles.valueCard, { backgroundColor: colors.card }]}>
               <Text style={[styles.valueLabel, { color: colors.textSecondary }]}>Total value</Text>
               <DeltaLabel
                 value={`$${parseFloat(snapshot.total_value).toLocaleString()}`}
-                changePct={snapshot.day_return}
+                changePct={periodReturn}
                 size="lg"
               />
+              <Text style={[styles.periodReturnLabel, { color: colors.textMuted }]}>
+                {activePeriod} return
+              </Text>
+
+              {/* Period sparkline */}
+              {sparkValues.length > 1 && (
+                <View style={styles.sparkContainer} pointerEvents="none">
+                  <Svg width={CHART_W} height={56}>
+                    <Path
+                      d={buildSparkPath(sparkValues, CHART_W, 56)}
+                      stroke={sparkPositive ? colors.green : colors.red}
+                      strokeWidth={1.5}
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </View>
+              )}
             </View>
 
             {/* Health card */}
@@ -144,6 +236,14 @@ export default function PortfolioScreen() {
               </View>
             </View>
 
+            {/* Risk metrics */}
+            {snapshot.risk_metrics && (
+              <>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Risk Metrics</Text>
+                <RiskMetricsCard metrics={snapshot.risk_metrics} colors={colors} />
+              </>
+            )}
+
             {/* What changed */}
             {changes && changes.length > 0 && (
               <>
@@ -166,7 +266,6 @@ export default function PortfolioScreen() {
             {/* Exposures */}
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Exposure</Text>
             <View style={[styles.exposureCard, { backgroundColor: colors.card }]}>
-              {/* Tab row */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll}>
                 {(['Sector', 'Geography', 'Theme', 'Hidden'] as const).map((tab) => (
                   <Pressable
@@ -235,7 +334,7 @@ export default function PortfolioScreen() {
         )}
       </ScrollView>
 
-      {/* Portfolio switcher — inline overlay, no Modal */}
+      {/* Portfolio switcher — inline overlay */}
       {showSwitcher && (
         <View style={StyleSheet.absoluteFillObject}>
           <Pressable style={styles.overlay} onPress={() => setShowSwitcher(false)} />
@@ -294,6 +393,8 @@ const styles = StyleSheet.create({
   list: { gap: Spacing.sm },
   valueCard: { borderRadius: Radius.lg, padding: Spacing.lg, gap: Spacing.xs },
   valueLabel: { fontSize: FontSize.sm },
+  periodReturnLabel: { fontSize: FontSize.xs, marginTop: 2 },
+  sparkContainer: { marginTop: Spacing.sm, marginHorizontal: -Spacing.sm },
   healthCard: { borderRadius: Radius.lg, padding: Spacing.lg },
   healthTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xl },
   subScores: { flex: 1, gap: Spacing.md },

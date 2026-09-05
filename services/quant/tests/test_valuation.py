@@ -1,81 +1,80 @@
-"""Known-answer tests for valuation calculations."""
-
 import pytest
 from quant_engine.valuation import (
-    dcf_range,
-    ev_ebitda_range,
-    forward_pe_range,
-    pe_range,
-    peer_implied_range,
-    price_to_sales_range,
+    ValuationResult,
+    aggregate_valuation,
+    dcf_valuation,
+    forward_pe_valuation,
+    historical_range_valuation,
+    p_fcf_valuation,
+    pe_valuation,
+    peer_valuation,
+    peg_valuation,
+    ps_valuation,
 )
 
 
-def test_pe_range_known():
-    result = pe_range(eps=5.0, pe_low=20.0, pe_base=25.0, pe_high=30.0)
-    assert result.low == pytest.approx(100.0)
-    assert result.base == pytest.approx(125.0)
-    assert result.high == pytest.approx(150.0)
+def test_pe_valuation_known():
+    result = pe_valuation(eps=5.0, pe_low=15.0, pe_base=20.0, pe_high=25.0)
     assert result.method == "pe"
+    assert pytest.approx(result.low, rel=1e-6) == 75.0
+    assert pytest.approx(result.base, rel=1e-6) == 100.0
+    assert pytest.approx(result.high, rel=1e-6) == 125.0
 
 
-def test_pe_range_rejects_negative_eps():
-    with pytest.raises(ValueError, match="positive EPS"):
-        pe_range(eps=-1.0, pe_low=20.0, pe_base=25.0, pe_high=30.0)
+def test_pe_negative_eps_raises():
+    with pytest.raises(ValueError):
+        pe_valuation(eps=0.0, pe_low=15.0, pe_base=20.0, pe_high=25.0)
 
 
-def test_forward_pe_range_known():
-    result = forward_pe_range(fwd_eps=6.0, pe_low=18.0, pe_base=22.0, pe_high=26.0)
-    assert result.low == pytest.approx(108.0)
-    assert result.base == pytest.approx(132.0)
-    assert result.high == pytest.approx(156.0)
-    assert result.method == "fwd_pe"
-
-
-def test_dcf_constant_fcf():
-    # $10 FCF for 5 years, terminal growth 2 %, WACC 10 %, 1000 shares, no debt
-    result = dcf_range(
-        free_cash_flows=[10.0] * 5,
-        terminal_growth_rates=(0.01, 0.02, 0.03),
-        discount_rates=(0.12, 0.10, 0.08),
-        shares=1000,
-        net_debt=0.0,
+def test_dcf_low_wacc_higher_value():
+    result_low_wacc = dcf_valuation(
+        fcf_per_share=10.0,
+        growth_rates=[0.10] * 5,
+        terminal_growth=0.025,
+        discount_rates=(0.07, 0.10, 0.12),
     )
-    assert result.method == "dcf"
-    assert result.low < result.base < result.high
-    # base case sanity: PV of $10 annuity 5yr at 10% + terminal ÷ 1000 shares
-    # rough check: base value should be a few dollars per share
-    assert 0.05 < result.base < 1.0
-
-
-def test_dcf_rejects_wacc_below_tgr():
-    with pytest.raises(ValueError, match="discount rate"):
-        dcf_range(
-            free_cash_flows=[10.0],
-            terminal_growth_rates=(0.05, 0.05, 0.05),
-            discount_rates=(0.03, 0.03, 0.03),
-            shares=100,
-        )
-
-
-def test_ev_ebitda_range():
-    # EBITDA=1000, net_debt=200, shares=100
-    # bear: 1000*8 - 200 = 7800 / 100 = 78
-    result = ev_ebitda_range(
-        ebitda=1000.0, net_debt=200.0, shares=100,
-        multiple_low=8.0, multiple_base=10.0, multiple_high=12.0,
+    result_high_wacc = dcf_valuation(
+        fcf_per_share=10.0,
+        growth_rates=[0.10] * 5,
+        terminal_growth=0.025,
+        discount_rates=(0.10, 0.12, 0.15),
     )
-    assert result.low == pytest.approx(78.0)
-    assert result.base == pytest.approx(98.0)
-    assert result.high == pytest.approx(118.0)
+    # Lower WACC range -> higher valuations
+    assert result_low_wacc.base > result_high_wacc.base
 
 
-def test_peer_implied_range_single_peer():
-    result = peer_implied_range(metric_value=10.0, peer_multiples=[20.0])
-    # p25 = p50 = p75 = 20.0 for a single value
-    assert result.base == pytest.approx(200.0)
-
-
-def test_peer_implied_range_ordering():
-    result = peer_implied_range(metric_value=1.0, peer_multiples=[10.0, 20.0, 30.0, 40.0])
+def test_dcf_ordering():
+    result = dcf_valuation(
+        fcf_per_share=8.0,
+        growth_rates=[0.12, 0.10, 0.08, 0.06, 0.05],
+        terminal_growth=0.025,
+    )
     assert result.low <= result.base <= result.high
+    assert result.bear <= result.low
+
+
+def test_valuation_result_ordering_all_methods():
+    results = [
+        pe_valuation(5.0, 15.0, 20.0, 25.0),
+        forward_pe_valuation(5.5, 14.0, 18.0, 23.0),
+        peg_valuation(5.0, 0.15, 2.0),
+        ps_valuation(30.0, 3.0, 5.0, 8.0),
+        p_fcf_valuation(8.0, 15.0, 22.0, 30.0),
+        dcf_valuation(8.0, [0.10] * 5),
+        historical_range_valuation(5.0, 14.0, 20.0, 28.0),
+        peer_valuation(5.0, 16.0, 21.0, 27.0),
+    ]
+    for r in results:
+        assert r.low <= r.base, f"{r.method}: low > base"
+        assert r.base <= r.high, f"{r.method}: base > high"
+        assert r.bear <= r.low, f"{r.method}: bear > low"
+        assert r.high <= r.bull, f"{r.method}: high > bull"
+
+
+def test_aggregate_valuation():
+    r1 = pe_valuation(5.0, 15.0, 20.0, 25.0)   # base=100
+    r2 = forward_pe_valuation(5.5, 14.0, 18.0, 23.0)  # base=99
+    agg = aggregate_valuation([r1, r2])
+    assert agg["low"] == min(r1.low, r2.low)
+    assert agg["high"] == max(r1.high, r2.high)
+    assert pytest.approx(agg["base"], rel=1e-6) == (r1.base + r2.base) / 2

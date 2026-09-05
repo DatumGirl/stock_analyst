@@ -1,77 +1,39 @@
-"""Return and performance calculations.
-
-All inputs are plain Python sequences or floats; numpy is an implementation
-detail. Callers should not depend on ndarray outputs — results are plain lists
-or floats so they serialise directly to JSON.
-"""
-
-from __future__ import annotations
+"""Pure return calculation functions. No I/O — arrays in, numbers out."""
 
 import numpy as np
 
 
-def daily_returns(prices: list[float]) -> list[float]:
-    """Compute log returns from a price series.
-
-    Args:
-        prices: Chronological daily close prices, length >= 2.
-
-    Returns:
-        Log returns of length len(prices) - 1.
-
-    Raises:
-        ValueError: If fewer than 2 prices are supplied or any price <= 0.
-    """
+def log_returns(prices: np.ndarray) -> np.ndarray:
+    """Compute log returns from a price series."""
     if len(prices) < 2:
-        raise ValueError("at least 2 prices required to compute returns")
-    arr = np.array(prices, dtype=np.float64)
-    if np.any(arr <= 0):
-        raise ValueError("all prices must be positive")
-    return np.log(arr[1:] / arr[:-1]).tolist()
+        return np.array([], dtype=float)
+    return np.diff(np.log(prices))
 
 
-def total_return(prices: list[float]) -> float:
-    """Compute the total return over the price series.
-
-    Args:
-        prices: Chronological daily close prices, length >= 2.
-
-    Returns:
-        Total return as a fraction (e.g. 0.12 = 12 %).
-    """
-    if len(prices) < 2:
-        raise ValueError("at least 2 prices required")
+def total_return(prices: np.ndarray) -> float:
+    """Total return from first to last price."""
+    if len(prices) < 2 or prices[0] == 0:
+        return float("nan")
     return float(prices[-1] / prices[0] - 1)
 
 
-def annualised_return(prices: list[float], trading_days: int = 252) -> float:
-    """Compound annualised return from a price series.
-
-    Args:
-        prices: Chronological daily close prices.
-        trading_days: Number of trading days per year.
-
-    Returns:
-        CAGR as a fraction.
-    """
-    n = len(prices) - 1
-    if n <= 0:
-        raise ValueError("at least 2 prices required")
-    tr = prices[-1] / prices[0]
-    return float(tr ** (trading_days / n) - 1)
+def cagr(prices: np.ndarray, periods_per_year: float = 252.0) -> float:
+    """Annualized compound growth rate."""
+    if len(prices) < 2 or prices[0] <= 0:
+        return float("nan")
+    n_periods = len(prices) - 1
+    if n_periods == 0:
+        return float("nan")
+    years = n_periods / periods_per_year
+    return float((prices[-1] / prices[0]) ** (1.0 / years) - 1)
 
 
-def cagr(start_value: float, end_value: float, years: float) -> float:
-    """Compound annual growth rate between two portfolio values.
-
-    Args:
-        start_value: Value at the start of the period.
-        end_value: Value at the end of the period.
-        years: Length of the period in years.
-
-    Returns:
-        CAGR as a fraction.
-    """
-    if start_value <= 0 or years <= 0:
-        raise ValueError("start_value and years must be positive")
-    return float((end_value / start_value) ** (1.0 / years) - 1)
+def rolling_return(prices: np.ndarray, window: int) -> np.ndarray:
+    """Rolling n-period return. First window-1 values are nan."""
+    if len(prices) < window + 1:
+        return np.full(len(prices), float("nan"))
+    result = np.full(len(prices), float("nan"))
+    for i in range(window, len(prices)):
+        if prices[i - window] != 0:
+            result[i] = prices[i] / prices[i - window] - 1
+    return result

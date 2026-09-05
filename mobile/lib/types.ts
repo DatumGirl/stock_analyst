@@ -226,6 +226,61 @@ export interface Signal {
   is_forecast: true;
 }
 
+// ─── Macro ────────────────────────────────────────────────────────────────────
+
+export interface MacroItem {
+  key: string;           // e.g. "10Y_YIELD", "VIX", "DXY", "CRUDE"
+  label: string;
+  value: number;
+  change: number | null;
+  change_pct: number | null;
+  unit: string;          // e.g. "%", "pts", "$"
+}
+
+export interface MacroSnapshot {
+  items: MacroItem[];
+  as_of: string;
+}
+
+// ─── Technical Analysis ───────────────────────────────────────────────────────
+
+export interface TechnicalSnapshot {
+  rsi_14: number | null;
+  macd_line: number | null;
+  macd_signal: number | null;
+  macd_hist: number | null;
+  sma_20: number | null;
+  sma_50: number | null;
+  sma_200: number | null;
+  atr_14: number | null;
+  vwap: number | null;
+  relative_volume: number | null;
+  as_of: string;
+}
+
+// ─── Forecast Model ───────────────────────────────────────────────────────────
+
+export interface ForecastYear {
+  fiscal_year: string;           // e.g. "2026"
+  revenue: string | null;
+  revenue_growth: number | null;
+  gross_margin: number | null;
+  eps: string | null;
+  fcf: string | null;
+}
+
+// ─── Portfolio Contribution ───────────────────────────────────────────────────
+
+export interface PortfolioContribution {
+  ticker: string;
+  sector_delta: Record<string, number>;
+  theme_delta: Record<string, number>;
+  correlation_with_portfolio: number | null;
+  recommendation: 'add' | 'reduce' | 'avoid' | 'neutral';
+  reason: string;
+  is_forecast: true;
+}
+
 // ─── Alerts ──────────────────────────────────────────────────────────────────
 
 export type AlertType = 'risk' | 'catalyst' | 'news' | 'thesis' | 'price';
@@ -272,6 +327,8 @@ export interface TickerAnalysis {
   full_report_markdown: string;
   model_disagreements: string[];
   data_freshness: string;
+  technical_snapshot?: TechnicalSnapshot;
+  forecast_model?: ForecastYear[];
   as_of: string;
   is_forecast: true;
 }
@@ -314,6 +371,7 @@ export interface DailyBrief {
   target_probability_delta: number;
   important: PortfolioChange[];
   catalysts: Catalyst[];
+  macro?: MacroSnapshot;
   opportunities: OpportunityCard[];
   action_plan: Array<{ ticker: string; action: ActionRecommendation; reason: string }>;
   rebalance_required: boolean;

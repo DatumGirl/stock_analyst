@@ -1,98 +1,143 @@
-"""Portfolio agent: allocation, correlation, risk limits, target-return probability."""
+"""Portfolio Agent — evaluates a candidate ticker's fit within a user's portfolio."""
+
 from __future__ import annotations
 
-import datetime
-from decimal import Decimal
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
-
-from .base import BaseAgent
-from ..models import AgentResult
+from pydantic import BaseModel
 
 
-class PortfolioAgent(BaseAgent):
-    def __init__(self, quant_service_url: str, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        self._quant_url = quant_service_url
+class PortfolioFitData(BaseModel):
+    ticker: str
+    portfolio_id: str
+    current_weights: dict[str, float]
+    sector_exposure: dict[str, float]
+    sector_delta_if_added: dict[str, float]
+    correlation_with_portfolio: float | None
+    tech_concentration_current: float | None
+    tech_concentration_delta: float | None
+    recommendation: str  # add / reduce / avoid / neutral
+    reason: str
+    as_of: str
+    warnings: list[str]
 
-    async def run(self, portfolio_id: str, candidate_ticker: str | None = None) -> AgentResult:  # type: ignore[override]
-        today = datetime.date.today().isoformat()
+
+class AgentResult(BaseModel):
+    data: PortfolioFitData
+    sources: list[str]
+    as_of: str
+    warnings: list[str]
+
+
+_TECH_SECTORS = {"Technology", "Communication Services", "Semiconductors"}
+
+
+class PortfolioAgent:
+    def __init__(self, supabase_url: str, supabase_key: str, quant_url: str) -> None:
+        self._url = supabase_url
+        self._key = supabase_key
+        self._quant = quant_url
+
+    def _headers(self) -> dict[str, str]:
+        return {"apikey": self._key, "Authorization": f"Bearer {self._key}"}
+
+    async def run(
+        self, ticker: str, portfolio_id: str, client: httpx.AsyncClient
+    ) -> AgentResult:
         warnings: list[str] = []
+        now = datetime.now(timezone.utc).isoformat()
 
         # Fetch positions
-        positions = await self._supabase_get(
-            "positions",
-            {"portfolio_id": f"eq.{portfolio_id}", "select": "ticker,quantity,cost_basis"},
+        pos_resp = await client.get(
+            f"{self._url}/rest/v1/positions",
+            params={"portfolio_id": f"eq.{portfolio_id}", "select": "ticker,quantity,cost_basis"},
+            headers=self._headers(),
         )
-
-        # Fetch latest snapshot
-        snapshots = await self._supabase_get(
-            "portfolio_snapshots",
-            {
-                "portfolio_id": f"eq.{portfolio_id}",
-                "order": "date.desc",
-                "limit": "1",
-                "select": "*",
-            },
-        )
-        snapshot = snapshots[0] if snapshots else None
+        positions: list[dict[str, Any]] = []
+        if pos_resp.status_code == 200:
+            positions = pos_resp.json()
 
         if not positions:
-            warnings.append(f"Portfolio {portfolio_id} has no positions")
-            return AgentResult(
-                data={"portfolio_id": portfolio_id, "positions": [], "snapshot": None},
-                sources=[],
-                as_of=today,
-                warnings=warnings,
+            warnings.append("No positions found — portfolio fit analysis limited")
+            data = PortfolioFitData(
+                ticker=ticker, portfolio_id=portfolio_id,
+                current_weights={}, sector_exposure={}, sector_delta_if_added={},
+                correlation_with_portfolio=None,
+                tech_concentration_current=None, tech_concentration_delta=None,
+                recommendation="neutral",
+                reason="Portfolio is empty — no concentration risk to evaluate.",
+                as_of=now, warnings=warnings,
             )
+            return AgentResult(data=data, sources=[], as_of=now, warnings=warnings)
 
-        tickers = [p["ticker"] for p in positions]
+        # Compute weights from cost_basis * quantity
+        total = sum(float(p["cost_basis"]) * float(p["quantity"]) for p in positions)
+        weights = {
+            p["ticker"]: float(p["cost_basis"]) * float(p["quantity"]) / total
+            for p in positions
+        } if total > 0 else {}
 
-        # Fetch portfolio risk from quant service
-        total_cost = sum(Decimal(str(p["cost_basis"])) * Decimal(str(p["quantity"])) for p in positions)
-        weights = []
-        for p in positions:
-            pos_value = Decimal(str(p["cost_basis"])) * Decimal(str(p["quantity"]))
-            weights.append(float(pos_value / total_cost) if total_cost > 0 else 0.0)
+        # Fetch ticker sector data
+        tickers_in_portfolio = list(weights.keys())
+        sector_resp = await client.get(
+            f"{self._url}/rest/v1/tickers",
+            params={"symbol": f"in.({','.join(tickers_in_portfolio + [ticker])})", "select": "symbol,sector"},
+            headers=self._headers(),
+        )
+        sectors: dict[str, str] = {}
+        if sector_resp.status_code == 200:
+            for row in sector_resp.json():
+                sectors[row["symbol"]] = row.get("sector") or "Unknown"
 
-        risk_data: dict[str, Any] = {}
-        try:
-            async with httpx.AsyncClient() as client:
-                res = await client.post(
-                    f"{self._quant_url}/portfolio/risk",
-                    json={"tickers": tickers, "weights": weights},
-                    timeout=15.0,
-                )
-            if res.status_code == 200:
-                risk_data = res.json().get("data", {})
-        except httpx.RequestError as e:
-            warnings.append(f"Could not compute portfolio risk: {e}")
+        # Sector exposure
+        sector_exp: dict[str, float] = {}
+        for t, w in weights.items():
+            s = sectors.get(t, "Unknown")
+            sector_exp[s] = sector_exp.get(s, 0.0) + w
 
-        # Candidate fit analysis
-        candidate_fit: str | None = None
-        if candidate_ticker:
-            ticker_weight_in_portfolio = next(
-                (w for t, w in zip(tickers, weights) if t == candidate_ticker), 0.0
-            )
-            existing_exposure = round(ticker_weight_in_portfolio * 100, 1)
-            candidate_fit = (
-                f"{candidate_ticker} currently represents {existing_exposure}% of the portfolio."
-                if existing_exposure > 0
-                else f"{candidate_ticker} is not currently in the portfolio."
-            )
+        # Tech concentration
+        tech_current = sum(w for t, w in weights.items() if sectors.get(t, "") in _TECH_SECTORS)
 
-        return AgentResult(
-            data={
-                "portfolio_id": portfolio_id,
-                "positions": positions,
-                "tickers": tickers,
-                "weights": weights,
-                "risk_metrics": risk_data,
-                "snapshot": snapshot,
-                "candidate_fit": candidate_fit,
-            },
-            sources=[f"supabase:positions:{portfolio_id}", f"quant_service:portfolio:{portfolio_id}"],
-            as_of=snapshot.get("date", today) if snapshot else today,
+        # Simulate adding ticker at 5% weight (reduce others proportionally)
+        candidate_sector = sectors.get(ticker, "Unknown")
+        candidate_weight = 0.05
+        scale = 1.0 - candidate_weight
+        new_sector_exp: dict[str, float] = {s: w * scale for s, w in sector_exp.items()}
+        new_sector_exp[candidate_sector] = new_sector_exp.get(candidate_sector, 0.0) + candidate_weight
+
+        tech_new = sum(w for s, w in new_sector_exp.items() if s in _TECH_SECTORS)
+        tech_delta = tech_new - tech_current
+
+        sector_delta = {s: new_sector_exp.get(s, 0) - sector_exp.get(s, 0) for s in set(sector_exp) | set(new_sector_exp)}
+
+        # Recommendation logic
+        recommendation = "neutral"
+        reason = f"Adding {ticker} at 5% would change sector exposure by {tech_delta:+.1%} in tech."
+
+        if tech_new > 0.40:
+            recommendation = "avoid"
+            reason = f"Tech/comms concentration would reach {tech_new:.0%} — above 40% threshold."
+        elif ticker in weights and weights[ticker] > 0.10:
+            recommendation = "reduce"
+            reason = f"Already hold {weights[ticker]:.0%} in {ticker} — adding more increases concentration."
+        elif tech_delta < -0.02:
+            recommendation = "add"
+            reason = f"Adding {ticker} improves diversification, reducing tech concentration by {abs(tech_delta):.1%}."
+
+        data = PortfolioFitData(
+            ticker=ticker,
+            portfolio_id=portfolio_id,
+            current_weights=weights,
+            sector_exposure=sector_exp,
+            sector_delta_if_added=sector_delta,
+            correlation_with_portfolio=None,  # requires quant service call with full returns
+            tech_concentration_current=tech_current,
+            tech_concentration_delta=tech_delta,
+            recommendation=recommendation,
+            reason=reason,
+            as_of=now,
             warnings=warnings,
         )
+        return AgentResult(data=data, sources=["supabase/positions", "supabase/tickers"], as_of=now, warnings=warnings)

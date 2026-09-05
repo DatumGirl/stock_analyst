@@ -1,95 +1,111 @@
-"""Monte Carlo simulation for portfolio target-return probability.
-
-The simulation is reproducible given a fixed seed, so results are auditable.
-All randomness is seeded by the caller; the function itself is deterministic
-given the same inputs.
 """
+Monte Carlo simulation using Geometric Brownian Motion for portfolio target-return probability.
 
-from __future__ import annotations
+Example:
+    result = simulate_portfolio_return(
+        weights=np.array([0.6, 0.4]),
+        expected_returns=np.array([0.12, 0.08]),
+        cov_matrix=np.array([[0.04, 0.01], [0.01, 0.02]]),
+        horizon_years=3,
+        target_cagr=0.10,
+        n_simulations=10_000,
+    )
+    print(f"P(CAGR >= 10%) = {result.target_probability:.1%}")
+"""
 
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.linalg import cholesky  # type: ignore[import-untyped]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass
 class MonteCarloResult:
-    """Output of a portfolio simulation run.
-
-    Attributes:
-        target_probability: Fraction of paths that meet or exceed the target CAGR.
-        mean_cagr: Mean CAGR across all simulation paths.
-        percentile_5: 5th-percentile CAGR (worst-case estimate).
-        percentile_50: Median CAGR.
-        percentile_95: 95th-percentile CAGR (best-case estimate).
-        n_paths: Number of simulation paths run.
-    """
-
     target_probability: float
-    mean_cagr: float
+    median_cagr: float
     percentile_5: float
-    percentile_50: float
+    percentile_25: float
+    percentile_75: float
     percentile_95: float
-    n_paths: int
-
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "target_probability": self.target_probability,
-            "mean_cagr": self.mean_cagr,
-            "percentile_5": self.percentile_5,
-            "percentile_50": self.percentile_50,
-            "percentile_95": self.percentile_95,
-            "n_paths": self.n_paths,
-        }
+    n_simulations: int
+    horizon_years: int
 
 
-def simulate_portfolio_cagr(
-    annual_mean_return: float,
-    annual_volatility: float,
+def simulate_portfolio_return(
+    weights: np.ndarray,
+    expected_returns: np.ndarray,
+    cov_matrix: np.ndarray,
     horizon_years: int,
     target_cagr: float,
-    n_paths: int = 10_000,
-    seed: int = 42,
+    n_simulations: int = 10_000,
+    random_seed: int | None = None,
 ) -> MonteCarloResult:
-    """Simulate portfolio terminal CAGR distribution using GBM.
+    """GBM portfolio simulation.
 
-    Args:
-        annual_mean_return: Expected annualised return (fraction, e.g. 0.08).
-        annual_volatility: Annualised volatility (fraction, e.g. 0.18).
-        horizon_years: Investment horizon in years.
-        target_cagr: The CAGR objective (e.g. 0.12 for 12 %).
-        n_paths: Number of Monte Carlo paths.
-        seed: Random seed for reproducibility.
-
-    Returns:
-        Simulation result including target probability and percentile CAGRs.
+    Uses Cholesky decomposition to correlate asset returns.
+    Annual time steps (dt = 1).
     """
-    if horizon_years <= 0:
-        raise ValueError("horizon_years must be positive")
-    if annual_volatility < 0:
-        raise ValueError("volatility must be non-negative")
-    if n_paths < 100:
-        raise ValueError("n_paths must be at least 100 for reliable estimates")
+    rng = np.random.default_rng(random_seed)
+    n_assets = len(weights)
 
-    rng = np.random.default_rng(seed)
-    dt = 1.0 / 252
-    steps = horizon_years * 252
-    drift = (annual_mean_return - 0.5 * annual_volatility**2) * dt
-    diffusion = annual_volatility * np.sqrt(dt)
+    # Cholesky factorisation for correlated draws
+    try:
+        L = cholesky(cov_matrix, lower=True)
+    except Exception:
+        # Fallback: diagonal covariance
+        L = np.diag(np.sqrt(np.diag(cov_matrix)))
 
-    # Shape: (n_paths, steps)
-    z = rng.standard_normal((n_paths, steps))
-    log_returns = drift + diffusion * z
-    terminal_log = np.sum(log_returns, axis=1)
-    terminal_value = np.exp(terminal_log)
+    # Portfolio drift and vol under GBM
+    port_mu = float(weights @ expected_returns)
+    port_var = float(weights @ cov_matrix @ weights)
+    port_sigma = float(np.sqrt(max(port_var, 0.0)))
 
-    cagrs = terminal_value ** (1.0 / horizon_years) - 1
+    # Simulate terminal values using portfolio-level GBM (dt=1 per year)
+    dt = 1.0
+    z = rng.standard_normal((n_simulations, horizon_years))
+    # GBM log-return per year: (mu - sigma^2/2)*dt + sigma*sqrt(dt)*Z
+    log_returns = (port_mu - 0.5 * port_var) * dt + port_sigma * np.sqrt(dt) * z
+    terminal_log = log_returns.sum(axis=1)
+    terminal_values = np.exp(terminal_log)
+
+    # CAGR from terminal value
+    cagrs = terminal_values ** (1.0 / horizon_years) - 1.0
 
     return MonteCarloResult(
         target_probability=float(np.mean(cagrs >= target_cagr)),
-        mean_cagr=float(np.mean(cagrs)),
+        median_cagr=float(np.median(cagrs)),
         percentile_5=float(np.percentile(cagrs, 5)),
-        percentile_50=float(np.percentile(cagrs, 50)),
+        percentile_25=float(np.percentile(cagrs, 25)),
+        percentile_75=float(np.percentile(cagrs, 75)),
         percentile_95=float(np.percentile(cagrs, 95)),
-        n_paths=n_paths,
+        n_simulations=n_simulations,
+        horizon_years=horizon_years,
     )
+
+
+def estimate_expected_returns(
+    historical_returns: np.ndarray,
+    method: str = "historical",
+    periods_per_year: float = 252.0,
+) -> np.ndarray:
+    """Annualized expected returns from historical daily returns (T x N array)."""
+    if method == "historical":
+        return np.mean(historical_returns, axis=0) * periods_per_year
+    elif method == "shrinkage":
+        # Shrink toward grand mean
+        asset_means = np.mean(historical_returns, axis=0) * periods_per_year
+        grand_mean = float(np.mean(asset_means))
+        shrink = 0.5
+        return shrink * grand_mean + (1 - shrink) * asset_means
+    else:
+        raise ValueError(f"Unknown method: {method}. Use 'historical' or 'shrinkage'.")
+
+
+def ledoit_wolf_cov(
+    returns: np.ndarray, periods_per_year: float = 252.0
+) -> np.ndarray:
+    """Annualized Ledoit-Wolf shrinkage covariance estimator."""
+    from scipy.covariance import ledoit_wolf as lw  # type: ignore[import-untyped]
+
+    cov, _ = lw(returns)
+    return cov * periods_per_year

@@ -1,54 +1,115 @@
-"""News agent: events, filings, analyst revisions, materiality chain."""
+"""News Agent — fetches news, catalysts and runs them through the materiality chain."""
+
 from __future__ import annotations
 
-import datetime
+from datetime import datetime, timezone
 from typing import Any
 
-from .base import BaseAgent
-from ..models import AgentResult
-
-# Materiality threshold — events below this score are filtered out
-MIN_MATERIALITY = 0.3
+import httpx
+from pydantic import BaseModel
 
 
-class NewsAgent(BaseAgent):
-    async def run(self, ticker: str, days: int = 7) -> AgentResult:  # type: ignore[override]
-        today = datetime.date.today()
-        cutoff = (today - datetime.timedelta(days=days)).isoformat()
+class MaterialNewsItem(BaseModel):
+    id: str
+    headline: str
+    url: str | None
+    source: str
+    tickers: list[str]
+    sentiment: str
+    materiality_score: float
+    affects_earnings: bool
+    affects_valuation: bool
+    affects_thesis: bool
+    as_of: str
+
+
+class NewsData(BaseModel):
+    ticker: str
+    material_news: list[MaterialNewsItem]
+    upcoming_catalysts: list[dict[str, Any]]
+    as_of: str
+    warnings: list[str]
+
+
+class AgentResult(BaseModel):
+    data: NewsData
+    sources: list[str]
+    as_of: str
+    warnings: list[str]
+
+
+class NewsAgent:
+    def __init__(self, supabase_url: str, supabase_key: str) -> None:
+        self._url = supabase_url
+        self._key = supabase_key
+
+    def _headers(self) -> dict[str, str]:
+        return {"apikey": self._key, "Authorization": f"Bearer {self._key}"}
+
+    async def run(self, ticker: str, client: httpx.AsyncClient) -> AgentResult:
         warnings: list[str] = []
+        now = datetime.now(timezone.utc).isoformat()
+        today = datetime.now(timezone.utc).date().isoformat()
 
-        events = await self._supabase_get(
-            "news_events",
-            {
-                "or": f"(tickers.cs.{{{ticker}}})",
-                "as_of": f"gte.{cutoff}",
-                "order": "materiality_score.desc",
+        # News events containing this ticker (Supabase array containment)
+        news_resp = await client.get(
+            f"{self._url}/rest/v1/news_events",
+            params={
+                "tickers": f"cs.{{\"{ticker}\"}}",
+                "order": "as_of.desc",
                 "limit": "20",
-                "select": "*",
+                "materiality_score": "gte.0.5",
             },
+            headers=self._headers(),
         )
+        news_rows: list[dict[str, Any]] = []
+        if news_resp.status_code == 200:
+            news_rows = news_resp.json()
+        else:
+            warnings.append(f"News fetch failed: HTTP {news_resp.status_code}")
 
-        catalysts = await self._supabase_get(
-            "catalysts",
-            {
+        # Upcoming catalysts
+        cat_resp = await client.get(
+            f"{self._url}/rest/v1/catalysts",
+            params={
                 "ticker": f"eq.{ticker}",
-                "date": f"gte.{today.isoformat()}",
+                "date": f"gte.{today}",
                 "order": "date.asc",
-                "limit": "5",
-                "select": "*",
+                "limit": "10",
             },
+            headers=self._headers(),
         )
+        catalysts: list[dict[str, Any]] = []
+        if cat_resp.status_code == 200:
+            catalysts = cat_resp.json()
 
-        material = [e for e in events if e.get("materiality_score", 0) >= MIN_MATERIALITY]
-        filtered_count = len(events) - len(material)
-        if filtered_count > 0:
-            warnings.append(f"{filtered_count} low-materiality events filtered out")
-        if not material and not catalysts:
-            warnings.append(f"No material news found for {ticker} in the last {days} days")
+        material_news = [
+            MaterialNewsItem(
+                id=row.get("id", ""),
+                headline=row.get("headline", ""),
+                url=row.get("url"),
+                source=row.get("source", ""),
+                tickers=row.get("tickers", []),
+                sentiment=row.get("sentiment", "neutral"),
+                materiality_score=float(row.get("materiality_score", 0)),
+                affects_earnings=bool(row.get("affects_earnings", False)),
+                affects_valuation=bool(row.get("affects_valuation", False)),
+                affects_thesis=bool(row.get("affects_thesis", False)),
+                as_of=row.get("as_of", now),
+            )
+            for row in news_rows[:5]  # max 5 material items
+        ]
 
+        data = NewsData(
+            ticker=ticker,
+            material_news=material_news,
+            upcoming_catalysts=catalysts,
+            as_of=now,
+            warnings=warnings,
+        )
         return AgentResult(
-            data={"ticker": ticker, "news_events": material, "catalysts": catalysts},
-            sources=[f"supabase:news_events:{ticker}", f"supabase:catalysts:{ticker}"],
-            as_of=today.isoformat(),
+            data=data,
+            sources=["supabase/news_events", "supabase/catalysts"],
+            as_of=now,
             warnings=warnings,
         )

@@ -1,26 +1,54 @@
-import { corsHeaders } from '../_shared/cors.ts';
-import { errorResponse, jsonResponse } from '../_shared/auth.ts';
+import { AuthError, corsHeaders, errorResponse, getSupabaseAdmin, jsonResponse, requireAuth } from "../_shared/auth.ts";
+import { orchestratorClient } from "../_shared/service_clients.ts";
 
-// JWT auth is handled at the gateway level (verify_jwt: true).
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders() });
   }
 
   try {
-    const body = await req.json();
-    const orchestratorUrl = Deno.env.get('ORCHESTRATOR_URL');
-    if (!orchestratorUrl) return errorResponse('ORCHESTRATOR_URL not configured', 503);
+    const userId = await requireAuth(req);
+    const { ticker, portfolio_id } = await req.json();
 
-    const res = await fetch(`${orchestratorUrl}/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+    if (!ticker || typeof ticker !== "string") {
+      return errorResponse("ticker is required");
+    }
+    const sym = ticker.toUpperCase().trim();
+    if (!/^[A-Z0-9.^=-]{1,7}$/.test(sym)) {
+      return errorResponse(`Invalid ticker: ${ticker}`);
+    }
+
+    // Verify portfolio belongs to user if provided
+    if (portfolio_id) {
+      const admin = getSupabaseAdmin();
+      const { data, error } = await admin
+        .from("portfolios")
+        .select("id")
+        .eq("id", portfolio_id)
+        .eq("user_id", userId)
+        .single();
+      if (error || !data) {
+        return errorResponse("Portfolio not found or access denied", 403);
+      }
+    }
+
+    const token = req.headers.get("Authorization")?.slice(7);
+    const result = await orchestratorClient.analyzeTicker(sym, portfolio_id, token);
+
+    // Log analysis run
+    const admin = getSupabaseAdmin();
+    await admin.from("analysis_runs").insert({
+      user_id: userId,
+      ticker: sym,
+      run_type: "analyze",
+      model_version: "claude-opus-4-8",
+      created_at: new Date().toISOString(),
     });
 
-    const data = await res.json();
-    return jsonResponse(data, res.status);
+    return jsonResponse(result);
   } catch (err) {
-    return errorResponse(err instanceof Error ? err.message : 'Request failed');
+    if (err instanceof AuthError) return errorResponse(err.message, 401);
+    console.error("analyze-ticker error:", err);
+    return errorResponse(err instanceof Error ? err.message : "Internal error", 500);
   }
 });

@@ -1,185 +1,70 @@
-"""Graph schema: node labels, relationship types and property contracts.
-
-The graph stores *relationships only*. Time-series (prices, fundamentals) and
-user-owned data (portfolios, positions) live in Postgres and are never
-duplicated here, per CLAUDE.md section 2.
-
-Every fact node carries provenance (``source``, ``as_of``); a node without it is
-a bug, so :func:`Provenance.validate` fails loudly at the ingestion boundary.
-"""
+"""Graph schema definitions and Memgraph query runner."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
-from enum import Enum
-from typing import Any
+from typing import Any, Literal, Protocol
+
+from neo4j import AsyncGraphDatabase, AsyncDriver
+
+RelationshipType = Literal[
+    "SUPPLIES",
+    "COMPETES_WITH",
+    "IS_CUSTOMER_OF",
+    "PART_OF_ETF",
+    "EXPOSED_TO_COUNTRY",
+    "PART_OF_SECTOR",
+    "EXPOSED_TO_THEME",
+    "DEPENDS_ON_COMMODITY",
+]
+
+_ALLOWED_REL_TYPES: frozenset[str] = frozenset(RelationshipType.__args__)  # type: ignore[attr-defined]
+
+MAX_HOPS = 5
 
 
-class NodeLabel(str, Enum):
-    """Node labels present in the graph."""
-
-    COMPANY = "Company"
-    SECTOR = "Sector"
-    INDUSTRY = "Industry"
-    ETF = "ETF"
-    COUNTRY = "Country"
-    COMMODITY = "Commodity"
-    TECHNOLOGY = "Technology"
-    THEME = "Theme"
-    RISK_FACTOR = "RiskFactor"
-    NEWS_EVENT = "NewsEvent"
-    MACRO_EVENT = "MacroEvent"
+class QueryRunner(Protocol):
+    async def execute(self, query: str, params: dict[str, Any]) -> list[dict[str, Any]]: ...
+    async def execute_write(self, query: str, params: dict[str, Any]) -> None: ...
 
 
-class RelType(str, Enum):
-    """Relationship types present in the graph."""
+class MemgraphQueryRunner:
+    """Wraps the neo4j driver configured for Memgraph's Bolt endpoint."""
 
-    SUPPLIES = "SUPPLIES"          # (Company)-[:SUPPLIES]->(Company)
-    CUSTOMER_OF = "CUSTOMER_OF"    # (Company)-[:CUSTOMER_OF]->(Company)
-    COMPETES_WITH = "COMPETES_WITH"
-    IN_SECTOR = "IN_SECTOR"
-    IN_INDUSTRY = "IN_INDUSTRY"
-    HELD_BY = "HELD_BY"            # (Company)-[:HELD_BY]->(ETF)
-    OPERATES_IN = "OPERATES_IN"    # (Company)-[:OPERATES_IN]->(Country)
-    DEPENDS_ON = "DEPENDS_ON"      # (Company)-[:DEPENDS_ON]->(Commodity|Technology)
-    EXPOSED_TO = "EXPOSED_TO"      # (Company)-[:EXPOSED_TO]->(RiskFactor)
-    PART_OF_THEME = "PART_OF_THEME"
-    AFFECTS = "AFFECTS"            # (NewsEvent|MacroEvent)-[:AFFECTS]->(*)
+    def __init__(self, host: str = "localhost", port: int = 7687) -> None:
+        uri = f"bolt://{host}:{port}"
+        self._driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=None)
 
+    async def close(self) -> None:
+        await self._driver.close()
 
-#: Relationship types whose weight expresses an exposure fraction in [0, 1].
-FRACTIONAL_REL_TYPES: frozenset[RelType] = frozenset(
-    {
-        RelType.SUPPLIES,
-        RelType.CUSTOMER_OF,
-        RelType.HELD_BY,
-        RelType.OPERATES_IN,
-        RelType.DEPENDS_ON,
-    }
-)
+    async def execute(self, query: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+        async with self._driver.session() as session:
+            result = await session.run(query, params)
+            return [dict(record) async for record in result]
 
-MIN_WEIGHT = 0.0
-MAX_WEIGHT = 1.0
-MIN_CONFIDENCE = 0.0
-MAX_CONFIDENCE = 1.0
+    async def execute_write(self, query: str, params: dict[str, Any]) -> None:
+        async with self._driver.session() as session:
+            await session.run(query, params)
 
 
-class ProvenanceError(ValueError):
-    """Raised when a node or edge reaches the graph without valid provenance."""
+def bind_query(
+    query: str,
+    rel_type: RelationshipType | None = None,
+    max_hops: int | None = None,
+) -> str:
+    """Textually substitute rel_type and hop bounds after validation.
 
-
-@dataclass(frozen=True, slots=True)
-class Provenance:
-    """Where a fact came from and when it was true.
-
-    Args:
-        source: Provider or document identifier, e.g. ``"sec:10-K:0000320193-24"``.
-        as_of: The date the fact was asserted by that source.
-        confidence: How strongly the source supports the fact, in [0, 1].
+    Never interpolates arbitrary user input — only values from the schema enum.
+    ADR 0001: Memgraph reserves 'hops'; use 'hop_count' in queries.
     """
+    if rel_type is not None:
+        if rel_type not in _ALLOWED_REL_TYPES:
+            raise ValueError(f"Unknown relationship type: {rel_type!r}")
+        query = query.replace("{{REL_TYPE}}", rel_type)
 
-    source: str
-    as_of: date
-    confidence: float = MAX_CONFIDENCE
+    if max_hops is not None:
+        if not (1 <= max_hops <= MAX_HOPS):
+            raise ValueError(f"max_hops must be 1–{MAX_HOPS}, got {max_hops}")
+        query = query.replace("{{MAX_HOPS}}", str(max_hops))
 
-    def validate(self) -> None:
-        """Reject provenance that would make a graph fact unauditable.
-
-        Raises:
-            ProvenanceError: If the source is blank, ``as_of`` is in the future,
-                or confidence falls outside [0, 1].
-        """
-        if not self.source.strip():
-            raise ProvenanceError("provenance requires a non-empty source")
-        if self.as_of > datetime.now(timezone.utc).date():
-            raise ProvenanceError(
-                f"provenance as_of {self.as_of.isoformat()} is in the future"
-            )
-        if not MIN_CONFIDENCE <= self.confidence <= MAX_CONFIDENCE:
-            raise ProvenanceError(
-                f"confidence {self.confidence} outside "
-                f"[{MIN_CONFIDENCE}, {MAX_CONFIDENCE}] for source {self.source!r}"
-            )
-
-    def as_properties(self) -> dict[str, Any]:
-        """Return provenance as Cypher-ready property values."""
-        return {
-            "source": self.source,
-            "as_of": self.as_of.isoformat(),
-            "confidence": self.confidence,
-        }
-
-
-@dataclass(frozen=True, slots=True)
-class GraphNode:
-    """A node destined for the graph, keyed uniquely by ``(label, key)``.
-
-    Args:
-        label: The node's label.
-        key: Natural key, unique within the label (ticker, theme slug, ...).
-        properties: Additional non-key properties, e.g. ``name``.
-        provenance: Where the node's assertion came from.
-    """
-
-    label: NodeLabel
-    key: str
-    provenance: Provenance
-    properties: dict[str, Any] = field(default_factory=dict)
-
-    def validate(self) -> None:
-        """Reject nodes that cannot be identified or audited.
-
-        Raises:
-            ProvenanceError: If provenance is invalid.
-            ValueError: If the natural key is blank.
-        """
-        if not self.key.strip():
-            raise ValueError(f"{self.label.value} node requires a non-empty key")
-        self.provenance.validate()
-
-
-@dataclass(frozen=True, slots=True)
-class GraphEdge:
-    """A directed relationship between two nodes.
-
-    Args:
-        rel_type: The relationship type.
-        start: Source node reference as ``(label, key)``.
-        end: Target node reference as ``(label, key)``.
-        weight: Strength of the relationship; an exposure fraction in [0, 1] for
-            :data:`FRACTIONAL_REL_TYPES`, otherwise an unconstrained score.
-        provenance: Where the relationship assertion came from.
-        properties: Additional non-key properties.
-    """
-
-    rel_type: RelType
-    start: tuple[NodeLabel, str]
-    end: tuple[NodeLabel, str]
-    provenance: Provenance
-    weight: float | None = None
-    properties: dict[str, Any] = field(default_factory=dict)
-
-    def validate(self) -> None:
-        """Reject edges that are self-referential, unweighted where required, or unauditable.
-
-        Raises:
-            ProvenanceError: If provenance is invalid.
-            ValueError: If the edge is a self-loop or its weight is out of range.
-        """
-        if self.start == self.end:
-            raise ValueError(
-                f"{self.rel_type.value} self-loop on {self.start[1]!r} is not a relationship"
-            )
-        if self.rel_type in FRACTIONAL_REL_TYPES:
-            if self.weight is None:
-                raise ValueError(
-                    f"{self.rel_type.value} from {self.start[1]!r} to {self.end[1]!r} "
-                    "requires a weight expressing exposure fraction"
-                )
-            if not MIN_WEIGHT <= self.weight <= MAX_WEIGHT:
-                raise ValueError(
-                    f"{self.rel_type.value} weight {self.weight} outside "
-                    f"[{MIN_WEIGHT}, {MAX_WEIGHT}] for {self.start[1]!r}->{self.end[1]!r}"
-                )
-        self.provenance.validate()
+    return query

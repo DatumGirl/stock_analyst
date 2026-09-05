@@ -85,14 +85,6 @@ async function post<T>(base: string, path: string, body: unknown, retries = 0): 
   return res.json();
 }
 
-// ─── Edge Function helper (orchestrator — JWT-gated) ─────────────────────────
-
-async function invokeFunction<T>(name: string, body?: unknown): Promise<ApiOk<T>> {
-  const { data, error } = await supabase.functions.invoke(name, { body });
-  if (error) throw new Error(error.message);
-  return data as ApiOk<T>;
-}
-
 // ─── Quant service ───────────────────────────────────────────────────────────
 
 export const quantApi = {
@@ -112,7 +104,7 @@ export const quantApi = {
     post(QUANT_URL, `/ingest/${ticker}`, {}),
 };
 
-// ─── Orchestrator (direct Railway call — same pattern as quant/graph) ────────
+// ─── Orchestrator ────────────────────────────────────────────────────────────
 
 export const orchestratorApi = {
   analyzeTicker: (ticker: string, portfolio_id?: string) =>
@@ -123,6 +115,9 @@ export const orchestratorApi = {
 
   dailyBrief: (portfolio_id: string, date?: string) =>
     get(ORCHESTRATOR_URL, `/brief/${portfolio_id}`, date ? { date } : undefined, 2),
+
+  portfolioContribution: (ticker: string, portfolio_id: string) =>
+    post(ORCHESTRATOR_URL, '/portfolio-contribution', { ticker, portfolio_id }, 1),
 };
 
 // ─── Graph service ────────────────────────────────────────────────────────────

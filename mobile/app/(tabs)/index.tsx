@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 import { useBrief } from '@/hooks/useBrief';
@@ -16,8 +17,20 @@ import { FreshnessStamp } from '@/components/ui/FreshnessStamp';
 import { SkeletonGroup } from '@/components/ui/SkeletonCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { MarketChart } from '@/components/ui/MarketChart';
+import { MacroBand } from '@/components/ui/MacroBand';
 import { Colors } from '@/constants/Colors';
 import { FontSize, FontWeight, Spacing, Radius } from '@/constants/Theme';
+import type { CatalystType, Sentiment } from '@/lib/types';
+
+const CATALYST_ICON: Record<CatalystType, string> = {
+  earnings: 'bar-chart-outline',
+  filing: 'document-text-outline',
+  fda: 'medkit-outline',
+  macro: 'globe-outline',
+  dividend: 'cash-outline',
+  guidance: 'trending-up-outline',
+  other: 'information-circle-outline',
+};
 
 export default function TodayScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -29,6 +42,12 @@ export default function TodayScreen() {
   const brief = data?.data;
 
   const pctColor = (v: number) => (v >= 0 ? colors.green : colors.red);
+
+  function impactColor(impact: Sentiment): string {
+    if (impact === 'positive') return colors.green;
+    if (impact === 'negative') return colors.red;
+    return colors.textSecondary;
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -45,7 +64,10 @@ export default function TodayScreen() {
           {data?.as_of && <FreshnessStamp asOf={data.as_of} refreshIntervalMinutes={10} />}
         </View>
 
-        {/* Market overview — always visible */}
+        {/* Macro band — key rates, VIX, DXY */}
+        <MacroBand />
+
+        {/* Market overview */}
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Markets</Text>
         <MarketChart />
 
@@ -127,6 +149,39 @@ export default function TodayScreen() {
                   />
                 ))}
               </View>
+            )}
+
+            {/* Catalysts */}
+            {(brief.catalysts?.length ?? 0) > 0 && (
+              <>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Catalysts</Text>
+                <View style={[styles.catalystCard, { backgroundColor: colors.card }]}>
+                  {brief.catalysts.map((cat) => {
+                    const color = impactColor(cat.expected_impact);
+                    return (
+                      <Pressable
+                        key={cat.id}
+                        style={[styles.catalystRow, { borderBottomColor: colors.border }]}
+                        onPress={() => cat.ticker && router.push(`/ticker/${cat.ticker}`)}
+                      >
+                        <View style={[styles.catIconBg, { backgroundColor: color + '20' }]}>
+                          <Ionicons name={CATALYST_ICON[cat.type] as any} size={16} color={color} />
+                        </View>
+                        <View style={styles.catContent}>
+                          <Text style={[styles.catDesc, { color: colors.textPrimary }]} numberOfLines={2}>
+                            {cat.description}
+                          </Text>
+                          <Text style={[styles.catMeta, { color: colors.textMuted }]}>
+                            {cat.ticker}
+                            {cat.date ? ` · ${new Date(cat.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                          </Text>
+                        </View>
+                        <Text style={[styles.catType, { color: colors.textMuted }]}>{cat.type}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
             )}
 
             {/* Opportunities */}
@@ -215,6 +270,13 @@ const styles = StyleSheet.create({
   list: { gap: Spacing.sm },
   calmCard: { padding: Spacing.lg, borderRadius: Radius.md, alignItems: 'center' },
   calmText: { fontSize: FontSize.md },
+  catalystCard: { borderRadius: Radius.lg, overflow: 'hidden' },
+  catalystRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, borderBottomWidth: 1 },
+  catIconBg: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  catContent: { flex: 1, gap: 2 },
+  catDesc: { fontSize: FontSize.sm },
+  catMeta: { fontSize: FontSize.xs },
+  catType: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
   oppCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, borderRadius: Radius.md },
   scoreBadge: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   scoreText: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, fontVariant: ['tabular-nums'] },

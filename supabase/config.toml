@@ -1,9 +1,6 @@
-project_id = "stockintel"
-
 [api]
-enabled = true
 port = 54321
-schemas = ["public", "graphql_public"]
+schemas = ["public", "storage", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
@@ -13,30 +10,40 @@ shadow_port = 54320
 major_version = 15
 
 [studio]
-enabled = true
 port = 54323
+enabled = true
 
 [inbucket]
-enabled = true
 port = 54324
+smtp_port = 54325
+pop3_port = 54326
 
 [storage]
 enabled = true
-file_size_limit = "50MiB"
 
 [auth]
-enabled = true
-site_url = "stockintel://auth/callback"
-additional_redirect_urls = ["stockintel://auth/callback", "http://localhost:8081"]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["stockintel://", "exp://localhost:8081"]
 jwt_expiry = 3600
-enable_refresh_token_rotation = true
-refresh_token_reuse_interval = 10
+enable_signup = true
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
 
-[auth.external.apple]
-enabled = true
-# client_id and secret set via: supabase secrets set APPLE_CLIENT_ID APPLE_SECRET_KEY
+[functions]
+[functions.analyze-ticker]
+verify_jwt = true
+
+[functions.compare-tickers]
+verify_jwt = true
+
+[functions.portfolio-snapshot]
+verify_jwt = false
+
+[functions.premarket-brief]
+verify_jwt = false
+
+[functions.eod-report]
+verify_jwt = false

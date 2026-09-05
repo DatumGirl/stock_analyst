@@ -1,38 +1,29 @@
 [project]
-name = "quant-service"
+name = "quant-engine"
 version = "0.1.0"
-description = "Deterministic quantitative engine — returns, risk, valuation"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.111.0",
-    "uvicorn[standard]>=0.30.0",
-    "numpy>=2.0.0",
-    "pandas>=2.2.0",
-    "scipy>=1.13.0",
-    "pydantic>=2.7.0",
-    "pydantic-settings>=2.3.0",
-    "httpx>=0.27.0",
-    "python-dotenv>=1.0.0",
-    "yfinance>=0.2.40",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "numpy>=2.1",
+  "pandas>=2.2",
+  "scipy>=1.14",
+  "pydantic>=2.9",
+  "httpx>=0.28",
+  "python-dotenv>=1.0",
 ]
 
-[project.optional-dependencies]
-test = [
-    "pytest>=8.2.0",
-    "pytest-asyncio>=0.23.0",
-    "httpx>=0.27.0",
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.24",
+  "mypy>=1.13",
+  "httpx>=0.28",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["quant_service"]
 
 [tool.mypy]
 strict = true
-python_version = "3.12"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

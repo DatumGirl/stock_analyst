@@ -1,90 +1,90 @@
-"""Known-answer tests for risk metrics."""
-
-import math
+import numpy as np
 import pytest
-from quant_engine.risk import (
-    annualised_volatility,
-    beta,
-    conditional_var,
-    correlation_matrix,
-    max_drawdown,
-    sharpe_ratio,
-    sortino_ratio,
-    value_at_risk,
-)
+from quant_engine import risk
 
 
-def _flat_returns(n: int = 252, value: float = 0.001) -> list[float]:
-    return [value] * n
+def test_annualized_volatility_known():
+    # Daily returns with daily std = 0.01 -> annualized vol ≈ 0.01 * sqrt(252)
+    rng = np.random.default_rng(42)
+    rets = rng.normal(0, 0.01, 500)
+    vol = risk.annualized_volatility(rets)
+    expected = np.std(rets, ddof=1) * np.sqrt(252)
+    np.testing.assert_allclose(vol, expected, rtol=1e-6)
 
 
-def test_volatility_zero_for_constant_returns():
-    # constant returns have zero variance → zero volatility
-    assert annualised_volatility(_flat_returns()) == pytest.approx(0.0, abs=1e-10)
+def test_annualized_volatility_insufficient():
+    assert np.isnan(risk.annualized_volatility(np.array([0.01])))
 
 
-def test_volatility_known():
-    # daily vol of 0.01 → annualised ≈ 0.01 * sqrt(252)
-    rets = [0.01, -0.01] * 126
-    vol = annualised_volatility(rets)
-    assert vol == pytest.approx(0.01 * math.sqrt(252), rel_tol=0.02)
+def test_beta_double_market():
+    market = np.array([0.01, -0.02, 0.015, -0.005, 0.02])
+    asset = 2.0 * market
+    np.testing.assert_allclose(risk.beta(asset, market), 2.0, rtol=1e-6)
 
 
-def test_beta_with_itself_is_one():
-    rets = [0.001 * i for i in range(1, 101)]
-    assert beta(rets, rets) == pytest.approx(1.0, rel_tol=1e-6)
+def test_beta_uncorrelated():
+    rng = np.random.default_rng(0)
+    market = rng.normal(0, 0.01, 1000)
+    asset = rng.normal(0, 0.01, 1000)  # independent
+    b = risk.beta(asset, market)
+    assert abs(b) < 0.15  # near zero with high probability
 
 
-def test_beta_zero_for_uncorrelated():
-    a = [1.0, -1.0] * 50
-    b = [1.0, 1.0] * 50
-    # b has zero variance; should raise
-    with pytest.raises(ValueError, match="zero variance"):
-        beta(a, b)
+def test_beta_zero_market_variance():
+    market = np.ones(10) * 0.01
+    asset = np.random.default_rng(0).normal(0, 0.01, 10)
+    assert np.isnan(risk.beta(asset, market))
 
 
 def test_max_drawdown_known():
-    # 100 → 200 → 100: drawdown = -0.5
-    prices = [100.0, 150.0, 200.0, 100.0]
-    assert max_drawdown(prices) == pytest.approx(-0.5)
+    prices = np.array([100.0, 110.0, 105.0, 90.0, 95.0])
+    # Peak 110 -> trough 90: drawdown = (90-110)/110
+    dd = risk.max_drawdown(prices)
+    np.testing.assert_allclose(dd, (90 - 110) / 110, rtol=1e-6)
 
 
-def test_max_drawdown_no_drawdown():
-    prices = [100.0, 110.0, 120.0]
-    assert max_drawdown(prices) == pytest.approx(0.0)
+def test_max_drawdown_monotone_increase():
+    prices = np.array([100.0, 101.0, 102.0, 103.0])
+    assert risk.max_drawdown(prices) >= -0.01  # essentially 0
 
 
-def test_var_is_negative():
-    rets = list(range(-10, 10))  # symmetric, so VaR should be negative
-    var = value_at_risk([float(r) for r in rets])
-    assert var < 0
+def test_var_95_basic():
+    rng = np.random.default_rng(7)
+    rets = rng.normal(0, 0.01, 1000)
+    var = risk.var_historical(rets, 0.95)
+    # 5% of 1000 = 50 worst returns; var should be positive loss
+    assert var > 0
+    # VaR at 95% means 5% of returns are worse
+    fraction_worse = np.mean(rets <= -var)
+    np.testing.assert_allclose(fraction_worse, 0.05, atol=0.01)
 
 
-def test_cvar_le_var():
-    rets = [float(r) / 100 for r in range(-30, 70)]
-    var = value_at_risk(rets)
-    cvar = conditional_var(rets)
-    assert cvar <= var
+def test_cvar_geq_var():
+    rng = np.random.default_rng(99)
+    rets = rng.normal(0, 0.02, 500)
+    var = risk.var_historical(rets)
+    cvar = risk.cvar_historical(rets)
+    assert cvar >= var - 1e-10
 
 
-def test_sharpe_positive_drift():
-    # 1 % daily excess return, zero vol → undefined; use a small vol
-    rets = [0.001 + 0.0001 * (i % 3 - 1) for i in range(252)]
-    sr = sharpe_ratio(rets)
-    assert sr > 0
+def test_sharpe_zero_vol():
+    rets = np.zeros(100)
+    assert np.isnan(risk.sharpe_ratio(rets))
 
 
-def test_sortino_ge_sharpe_for_positive_skew():
-    # all returns positive → no downside → Sortino = NaN
-    rets = [0.001] * 252
-    assert math.isnan(sortino_ratio(rets))
+def test_portfolio_volatility_perfect_correlation():
+    # Two assets with same vol, perfectly correlated -> portfolio vol = vol
+    vol = 0.20
+    cov = np.array([[vol**2, vol**2], [vol**2, vol**2]])
+    weights = np.array([0.5, 0.5])
+    port_vol = risk.portfolio_volatility(weights, cov)
+    np.testing.assert_allclose(port_vol, vol, rtol=1e-6)
 
 
-def test_correlation_self_is_one():
-    rets = [float(i) / 100 for i in range(1, 51)]
-    result = correlation_matrix({"A": rets, "B": rets})
-    assert result["A"]["B"] == pytest.approx(1.0)
-
-
-def test_correlation_empty():
-    assert correlation_matrix({}) == {}
+def test_portfolio_volatility_uncorrelated():
+    # Two equal-weight uncorrelated assets with same vol -> portfolio vol = vol / sqrt(2)
+    vol = 0.20
+    cov = np.array([[vol**2, 0.0], [0.0, vol**2]])
+    weights = np.array([0.5, 0.5])
+    port_vol = risk.portfolio_volatility(weights, cov)
+    np.testing.assert_allclose(port_vol, vol / np.sqrt(2), rtol=1e-6)
