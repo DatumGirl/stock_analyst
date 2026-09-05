@@ -172,7 +172,7 @@ export default function TickerScreen() {
         )}
 
         {/* What's driving it */}
-        {analysis && analysis.what_is_driving.length > 0 && (
+        {analysis && (analysis.what_is_driving?.length ?? 0) > 0 && (
           <CollapsibleSection
             title="What's driving it"
             sectionKey="whats_driving"
@@ -181,7 +181,7 @@ export default function TickerScreen() {
             colors={colors}
           >
             <View style={styles.list}>
-              {analysis.what_is_driving.map((event) => (
+              {(analysis.what_is_driving ?? []).map((event) => (
                 <MaterialityRow
                   key={event.id}
                   type="news"
