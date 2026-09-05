@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routes import ingest, market, metrics, portfolio, snapshot, valuation
+from .routes import ingest, market, metrics, portfolio, signals, snapshot, valuation
 
 app = FastAPI(
     title="StockIntel Quant Service",
@@ -26,6 +26,7 @@ app.include_router(portfolio.router)
 app.include_router(valuation.router)
 app.include_router(ingest.router)
 app.include_router(snapshot.router)
+app.include_router(signals.router)
 app.include_router(market.router)
 
 
