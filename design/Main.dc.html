@@ -1,0 +1,1152 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #2B5FA8; text-decoration: none; } a:hover { color: #1E4680; }
+    * { box-sizing: border-box; }
+    .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+    .tapx { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .tapx:active { opacity: 0.62; }
+    .scroll { overflow-y: auto; scrollbar-width: none; }
+    .scroll::-webkit-scrollbar { display: none; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.text}}; display: flex; flex-direction: column;">
+
+  <!-- ============ NAV BAR ============ -->
+  <div style="flex-shrink: 0; padding: 8px 16px 10px 16px; background: {{t.navbg}}; border-bottom: 0.5px solid {{t.hair}}; display: flex; flex-direction: column; gap: 2px; position: relative; z-index: 5;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
+      <div style="font-size: 26px; line-height: 32px; font-weight: 700; letter-spacing: -0.5px;">{{screen.title}}</div>
+      <div class="num" style="font-size: 11px; color: {{t.dim}}; letter-spacing: 0.1px;">{{screen.stamp}}</div>
+    </div>
+    <div style="font-size: 12px; line-height: 16px; color: {{t.dim}};">{{screen.sub}}</div>
+  </div>
+
+  <!-- ============ SCROLL BODY ============ -->
+  <div class="scroll" style="flex-grow: 1; position: relative;">
+
+    <!-- ---------- TODAY ---------- -->
+    <sc-if value="{{isToday}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 24px 16px;">
+
+      <!-- Hero -->
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+            <div style="font-size: 12px; color: {{t.dim}};">Portfolio today</div>
+            <div class="num" style="font-size: 30px; line-height: 34px; font-weight: 700; letter-spacing: -0.8px; color: {{t.up}};">+0.81%</div>
+            <div class="num" style="font-size: 13px; color: {{t.dim}};">$248,310 &middot; +$1,994</div>
+          </div>
+          <div style="width: 76px; height: 76px; position: relative; flex-shrink: 0;">
+            <svg width="76" height="76" viewBox="0 0 76 76" style="display: block; transform: rotate(-90deg);">
+              <circle cx="38" cy="38" r="32" fill="none" stroke="{{t.track}}" stroke-width="7"></circle>
+              <circle cx="38" cy="38" r="32" fill="none" stroke="{{t.good}}" stroke-width="7" stroke-linecap="round" stroke-dasharray="201.06" stroke-dashoffset="32.2"></circle>
+            </svg>
+            <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0px;">
+              <div class="num" style="font-size: 21px; font-weight: 700; letter-spacing: -0.4px; line-height: 22px;">84</div>
+              <div style="font-size: 8px; color: {{t.dim}}; letter-spacing: 0.4px; text-transform: uppercase;">Health</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 0.5px; background: {{t.hair}};"></div>
+
+        <div style="display: flex; flex-direction: column; gap: 7px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+            <div style="font-size: 12px; color: {{t.dim}};">12% CAGR objective &middot; 2 years</div>
+            <div style="display: flex; align-items: baseline; gap: 6px;">
+              <div class="num" style="font-size: 15px; font-weight: 650;">47%</div>
+              <div class="num" style="font-size: 11px; font-weight: 600; color: {{t.up}};">&#9652;2</div>
+            </div>
+          </div>
+          <div style="height: 5px; border-radius: 3px; background: {{t.track}}; position: relative; overflow: hidden;">
+            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 47%; background: {{t.accent}}; border-radius: 3px;"></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="font-size: 9.5px; font-weight: 600; letter-spacing: 0.3px; color: {{t.accent}}; border: 0.5px solid {{t.accentline}}; background: {{t.accentbg}}; padding: 1.5px 5px; border-radius: 4px; text-transform: uppercase;">Forecast</div>
+            <div style="font-size: 11px; color: {{t.dim}};">Objective, not a promise &middot; Monte&nbsp;Carlo v2.1</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Important -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 2px 2px 2px;">
+        <div style="font-size: 12px; font-weight: 650; letter-spacing: 0.6px; text-transform: uppercase; color: {{t.dim}};">Important</div>
+        <div class="num" style="font-size: 11px; color: {{t.dim}};">1 item</div>
+      </div>
+
+      <div class="tapx" onClick="{{openConcentration}}" style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; padding: 13px 14px; display: flex; align-items: flex-start; gap: 11px;">
+        <div style="width: 26px; height: 26px; border-radius: 7px; background: {{t.amberbg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{t.amber}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 17h.01"></path></svg>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+          <div style="font-size: 14.5px; font-weight: 620; letter-spacing: -0.1px;">Tech concentration rose to 37%</div>
+          <div style="font-size: 12.5px; line-height: 17px; color: {{t.dim}};">Sector weight says 37%. Counting index look-through, four positions share semiconductor risk — effective exposure is 49%.</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{t.chev}}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 5px;"><path d="m9 18 6-6-6-6"></path></svg>
+      </div>
+
+      <!-- Tomorrow -->
+      <div style="font-size: 12px; font-weight: 650; letter-spacing: 0.6px; text-transform: uppercase; color: {{t.dim}}; padding: 10px 2px 2px 2px;">Tomorrow</div>
+
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;">
+        <sc-for list="{{catalysts}}" as="c" hint-placeholder-count="2">
+          <div class="tapx" onClick="{{c.open}}" style="padding: 12px 14px; display: flex; align-items: center; gap: 11px; border-top: {{c.rule}};">
+            <div style="width: 42px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 0px; background: {{t.chipbg}}; border-radius: 7px; padding: 4px 0 5px 0;">
+              <div style="font-size: 8.5px; font-weight: 700; letter-spacing: 0.6px; color: {{t.dim}}; text-transform: uppercase;">{{c.mon}}</div>
+              <div class="num" style="font-size: 15px; font-weight: 680; line-height: 17px;">{{c.day}}</div>
+            </div>
+            <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+              <div style="font-size: 14px; font-weight: 600;">{{c.title}}</div>
+              <div style="font-size: 12px; color: {{t.dim}};">{{c.sub}}</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{t.chev}}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"></path></svg>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Opportunities -->
+      <div style="font-size: 12px; font-weight: 650; letter-spacing: 0.6px; text-transform: uppercase; color: {{t.dim}}; padding: 10px 2px 2px 2px;">Opportunities</div>
+
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;">
+        <sc-for list="{{opps}}" as="o" hint-placeholder-count="3">
+          <div class="tapx" onClick="{{o.open}}" style="padding: 12px 14px; display: flex; align-items: center; gap: 11px; border-top: {{o.rule}};">
+            <div class="num" style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; background: {{o.scorebg}}; color: {{o.scorefg}}; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 700; letter-spacing: -0.2px;">{{o.score}}</div>
+            <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="font-size: 14.5px; font-weight: 650; letter-spacing: -0.1px;">{{o.ticker}}</div>
+                <div style="font-size: 8.5px; font-weight: 600; letter-spacing: 0.3px; color: {{t.accent}}; border: 0.5px solid {{t.accentline}}; background: {{t.accentbg}}; padding: 1px 4px; border-radius: 3px; text-transform: uppercase;">Model</div>
+              </div>
+              <div style="font-size: 12px; line-height: 16px; color: {{t.dim}};">{{o.thesis}}</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{t.chev}}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"></path></svg>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Action plan -->
+      <div style="font-size: 12px; font-weight: 650; letter-spacing: 0.6px; text-transform: uppercase; color: {{t.dim}}; padding: 10px 2px 2px 2px;">Action plan</div>
+
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;">
+        <sc-for list="{{actions}}" as="a" hint-placeholder-count="4">
+          <div class="tapx" onClick="{{a.open}}" style="padding: 11px 14px; display: flex; align-items: center; gap: 11px; border-top: {{a.rule}};">
+            <div style="font-size: 14.5px; font-weight: 650; width: 54px; flex-shrink: 0; letter-spacing: -0.1px;">{{a.ticker}}</div>
+            <div style="flex-grow: 1; font-size: 12.5px; color: {{t.dim}}; line-height: 16px;">{{a.why}}</div>
+            <div style="flex-shrink: 0; font-size: 11px; font-weight: 650; letter-spacing: 0.2px; padding: 3.5px 9px; border-radius: 20px; background: {{a.pillbg}}; color: {{a.pillfg}};">{{a.pill}}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding: 14px 4px 4px 4px; font-size: 10.5px; line-height: 15px; color: {{t.faint}};">Research and decision support only. Not investment advice. Sources: market data as of 4:15 PM ET &middot; models v2.1.</div>
+    </div>
+    </sc-if>
+
+    <!-- ---------- PORTFOLIO ---------- -->
+    <sc-if value="{{isPortfolio}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 24px 16px;">
+
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 13px;">
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <div class="num" style="font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: -0.9px;">$248,310</div>
+          <div class="num" style="font-size: 13.5px; font-weight: 600; color: {{t.up}};">&#9652; $1,994 &middot; +0.81% today</div>
+        </div>
+        <div style="display: flex; gap: 5px; background: {{t.chipbg}}; padding: 3px; border-radius: 9px;">
+          <sc-for list="{{ranges}}" as="r" hint-placeholder-count="5">
+            <div class="tapx num" onClick="{{r.pick}}" style="flex-grow: 1; text-align: center; font-size: 12px; font-weight: {{r.weight}}; min-height: 38px; display: flex; align-items: center; justify-content: center; padding: 5px 0; border-radius: 7px; background: {{r.bg}}; color: {{r.fg}}; box-shadow: {{r.shadow}};">{{r.label}}</div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- Health -->
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; padding: 15px; display: flex; align-items: center; gap: 16px;">
+        <div style="width: 66px; height: 66px; position: relative; flex-shrink: 0;">
+          <svg width="66" height="66" viewBox="0 0 66 66" style="display: block; transform: rotate(-90deg);">
+            <circle cx="33" cy="33" r="27.5" fill="none" stroke="{{t.track}}" stroke-width="6.5"></circle>
+            <circle cx="33" cy="33" r="27.5" fill="none" stroke="{{t.good}}" stroke-width="6.5" stroke-linecap="round" stroke-dasharray="172.8" stroke-dashoffset="27.6"></circle>
+          </svg>
+          <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+            <div class="num" style="font-size: 19px; font-weight: 700; letter-spacing: -0.4px;">84</div>
+          </div>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: -1px;">
+            <div style="font-size: 8.5px; font-weight: 600; letter-spacing: 0.3px; color: {{t.accent}}; border: 0.5px solid {{t.accentline}}; background: {{t.accentbg}}; padding: 1px 4px; border-radius: 3px; text-transform: uppercase;">Model</div>
+            <div style="font-size: 10px; color: {{t.faint}};">health engine v2.1</div>
+          </div>
+          <sc-for list="{{subscores}}" as="s" hint-placeholder-count="3">
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <div style="font-size: 11.5px; color: {{t.dim}};">{{s.label}}</div>
+                <div style="display: flex; align-items: baseline; gap: 5px;">
+                  <div style="font-size: 10px; color: {{s.color}}; font-weight: 620;">{{s.word}}</div>
+                  <div class="num" style="font-size: 11.5px; font-weight: 620;">{{s.val}}</div>
+                </div>
+              </div>
+              <div style="height: 3.5px; border-radius: 2px; background: {{t.track}}; position: relative; overflow: hidden;">
+                <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{s.pct}}; background: {{s.color}}; border-radius: 2px;"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- Exposure -->
+      <div style="font-size: 12px; font-weight: 650; letter-spacing: 0.6px; text-transform: uppercase; color: {{t.dim}}; padding: 10px 2px 2px 2px;">Exposure</div>
+
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; gap: 4px; background: {{t.chipbg}}; padding: 3px; border-radius: 9px;">
+          <sc-for list="{{expTabs}}" as="e" hint-placeholder-count="4">
+            <div class="tapx" onClick="{{e.pick}}" style="flex-grow: 1; text-align: center; font-size: 11.5px; font-weight: {{e.weight}}; min-height: 38px; display: flex; align-items: center; justify-content: center; padding: 5px 0; border-radius: 7px; background: {{e.bg}}; color: {{e.fg}}; box-shadow: {{e.shadow}};">{{e.label}}</div>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 104px; height: 104px; flex-shrink: 0; position: relative;">
+            <svg width="104" height="104" viewBox="0 0 104 104" style="display: block; transform: rotate(-90deg);">
+              <sc-for list="{{donut}}" as="d" hint-placeholder-count="4">
+                <circle cx="52" cy="52" r="42" fill="none" stroke="{{d.color}}" stroke-width="15" stroke-dasharray="{{d.dash}}" stroke-dashoffset="{{d.offset}}"></circle>
+              </sc-for>
+            </svg>
+            <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <div class="num" style="font-size: 19px; font-weight: 700; letter-spacing: -0.4px;">{{expTop.val}}</div>
+              <div style="font-size: 9.5px; color: {{t.dim}}; letter-spacing: 0.2px;">{{expTop.label}}</div>
+            </div>
+          </div>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 7px;">
+            <sc-for list="{{donut}}" as="d" hint-placeholder-count="4">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 9px; height: 9px; border-radius: 3px; background: {{d.color}}; flex-shrink: 0;"></div>
+                <div style="flex-grow: 1; font-size: 12px; color: {{t.text}};">{{d.label}}</div>
+                <div class="num" style="font-size: 12px; font-weight: 620; color: {{t.dim}};">{{d.pct}}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{expNote}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: 9px; align-items: flex-start; background: {{t.amberbg}}; border-radius: 10px; padding: 10px 11px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{t.amber}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            <div style="font-size: 12px; line-height: 16.5px; color: {{t.amberfg}};">{{expNote}}</div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- What changed -->
+      <div style="font-size: 12px; font-weight: 650; letter-spacing: 0.6px; text-transform: uppercase; color: {{t.dim}}; padding: 10px 2px 2px 2px;">What changed</div>
+
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;">
+        <sc-for list="{{changes}}" as="c" hint-placeholder-count="2">
+          <div class="tapx" onClick="{{c.open}}" style="padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; border-top: {{c.rule}};">
+            <div style="width: 5px; height: 5px; border-radius: 3px; background: {{c.dot}}; flex-shrink: 0; margin-top: 6px;"></div>
+            <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+              <div style="font-size: 13.5px; font-weight: 600;">{{c.title}}</div>
+              <div style="font-size: 12px; line-height: 16px; color: {{t.dim}};">{{c.why}}</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{t.chev}}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m9 18 6-6-6-6"></path></svg>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Holdings -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 2px 2px 2px;">
+        <div style="font-size: 12px; font-weight: 650; letter-spacing: 0.6px; text-transform: uppercase; color: {{t.dim}};">Holdings</div>
+        <div class="tapx" onClick="{{addPosition}}" style="font-size: 12.5px; font-weight: 600; color: {{t.accent}}; min-height: 44px; display: flex; align-items: center; padding-left: 12px;">Add</div>
+      </div>
+
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;">
+        <sc-for list="{{holdings}}" as="h" hint-placeholder-count="6">
+          <div class="tapx" onClick="{{h.open}}" style="padding: 14px; min-height: 44px; display: flex; align-items: center; gap: 10px; border-top: {{h.rule}};">
+            <div style="width: 15px; height: 15px; border-radius: 5px; background: {{h.markBg}}; color: {{h.markColor}}; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 800; line-height: 1;">{{h.mark}}</div>
+            <div style="width: 58px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1px;">
+              <div style="font-size: 14px; font-weight: 650; letter-spacing: -0.1px;">{{h.ticker}}</div>
+              <div class="num" style="font-size: 10.5px; color: {{t.faint}};">{{h.weight}}</div>
+            </div>
+            <div style="flex-grow: 1; height: 22px; display: flex; align-items: flex-end; gap: 1.5px;">
+              <sc-for list="{{h.spark}}" as="b" hint-placeholder-count="12">
+                <div style="flex-grow: 1; height: {{b.h}}; background: {{h.sparkcolor}}; border-radius: 1px; opacity: 0.55;"></div>
+              </sc-for>
+            </div>
+            <div class="num" style="width: 60px; flex-shrink: 0; text-align: right; font-size: 13px; font-weight: 620; color: {{h.color}};">{{h.change}}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding: 12px 4px 4px 4px; font-size: 10.5px; line-height: 15px; color: {{t.faint}};">Thesis: &#10003; intact &middot; ! under review &middot; &times; broken. Weights include cash and total 100%. Research only, not investment advice.</div>
+    </div>
+    </sc-if>
+
+    <!-- ---------- RESEARCH ---------- -->
+    <sc-if value="{{isResearch}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 24px 16px;">
+
+      <div style="display: flex; align-items: center; gap: 9px; background: {{t.chipbg}}; border-radius: 11px; padding: 9px 12px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{t.dim}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <div style="font-size: 14px; color: {{t.faint}};">Search ticker or company</div>
+      </div>
+
+      <!-- Selected ticker header -->
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; padding: 15px; display: flex; flex-direction: column; gap: 13px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+            <div style="display: flex; align-items: baseline; gap: 7px;">
+              <div style="font-size: 20px; font-weight: 700; letter-spacing: -0.4px;">{{tk.ticker}}</div>
+              <div style="font-size: 12.5px; color: {{t.dim}};">{{tk.name}}</div>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <div class="num" style="font-size: 25px; font-weight: 700; letter-spacing: -0.6px;">{{tk.price}}</div>
+              <div class="num" style="font-size: 13.5px; font-weight: 620; color: {{tk.color}};">{{tk.change}}</div>
+            </div>
+            <div class="num" style="font-size: 10.5px; color: {{t.faint}};">as of 4:15 PM ET</div>
+          </div>
+          <div class="tapx" onClick="{{toggleStar}}" style="flex-shrink: 0; width: 44px; height: 44px; margin: -8px -10px -8px 0; display: flex; align-items: center; justify-content: center;">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="{{tk.starfill}}" stroke="{{tk.starstroke}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.9a.5.5 0 0 1 .9 0l2.4 5a.5.5 0 0 0 .4.3l5.4.8a.5.5 0 0 1 .3.9l-4 3.8a.5.5 0 0 0-.1.4l1 5.4a.5.5 0 0 1-.8.5l-4.8-2.5a.5.5 0 0 0-.5 0L6.9 20a.5.5 0 0 1-.8-.5l1-5.4a.5.5 0 0 0-.2-.4l-3.9-3.8a.5.5 0 0 1 .3-.9l5.4-.8a.5.5 0 0 0 .4-.3z"></path></svg>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 6px;">
+          <sc-for list="{{tk.tickers}}" as="x" hint-placeholder-count="4">
+            <div class="tapx" onClick="{{x.pick}}" style="font-size: 12px; font-weight: {{x.weight}}; min-height: 40px; display: flex; align-items: center; padding: 5px 14px; border-radius: 8px; background: {{x.bg}}; color: {{x.fg}};">{{x.label}}</div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- Verdict -->
+      <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; padding: 15px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 7px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{t.dim}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"></path><path d="m16.2 7.8 2.9-2.9"></path><path d="M18 12h4"></path><path d="m16.2 16.2 2.9 2.9"></path><path d="M12 18v4"></path><path d="m4.9 19.1 2.9-2.9"></path><path d="M2 12h4"></path><path d="m4.9 4.9 2.9 2.9"></path></svg>
+          <div style="font-size: 11px; font-weight: 650; letter-spacing: 0.5px; text-transform: uppercase; color: {{t.dim}};">Chief Analyst</div>
+        </div>
+        <div style="font-size: 15px; line-height: 21px; letter-spacing: -0.1px;">{{tk.verdict}}</div>
+        <div style="display: flex; gap: 7px;">
+          <sc-for list="{{tk.chips}}" as="c" hint-placeholder-count="3">
+            <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; background: {{c.bg}}; border-radius: 9px; padding: 8px 9px;">
+              <div style="font-size: 9.5px; font-weight: 650; letter-spacing: 0.4px; text-transform: uppercase; color: {{t.dim}};">{{c.label}}</div>
+              <div style="font-size: 12.5px; font-weight: 640; color: {{c.fg}};">{{c.val}}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- Fair value -->
+      <div class="tapx" onClick="{{openMethods}}" style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; padding: 15px; display: flex; flex-direction: column; gap: 13px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-size: 13.5px; font-weight: 650;">Price vs. what it's worth</div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <div style="font-size: 11.5px; font-weight: 600; color: {{t.accent}};">Methods</div>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{t.accent}}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 7px; padding-top: 20px;">
+          <div style="position: relative; height: 11px;">
+            <div style="position: absolute; left: 0; right: 0; top: 3px; height: 5px; border-radius: 3px; background: {{t.track}};"></div>
+            <div style="position: absolute; left: 38.8%; width: 40%; top: 3px; height: 5px; border-radius: 3px; background: {{t.bandfill}};"></div>
+            <div style="position: absolute; left: 66.2%; top: 1px; width: 2px; height: 9px; border-radius: 1px; background: {{t.dim}};"></div>
+            <div style="position: absolute; left: 43.8%; top: -1px; width: 3px; height: 13px; border-radius: 2px; background: {{t.text}};"></div>
+            <div style="position: absolute; left: 43.8%; top: -19px; font-size: 10px; font-weight: 640; color: {{t.text}}; transform: translateX(-50%); white-space: nowrap;">now $180</div>
+          </div>
+          <div class="num" style="display: flex; justify-content: space-between; font-size: 10.5px; color: {{t.dim}};">
+            <div style="display: flex; flex-direction: column; gap: 1px;"><div style="font-weight: 620; color: {{t.text}};">$145</div><div>bear</div></div>
+            <div style="display: flex; flex-direction: column; gap: 1px; align-items: center;"><div style="font-weight: 620; color: {{t.text}};">$198</div><div>base</div></div>
+            <div style="display: flex; flex-direction: column; gap: 1px; align-items: flex-end;"><div style="font-weight: 620; color: {{t.text}};">$225</div><div>bull</div></div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="font-size: 9.5px; font-weight: 600; letter-spacing: 0.3px; color: {{t.accent}}; border: 0.5px solid {{t.accentline}}; background: {{t.accentbg}}; padding: 1.5px 5px; border-radius: 4px; text-transform: uppercase;">Forecast</div>
+          <div style="font-size: 11px; color: {{t.dim}};">To scale &middot; band = peer range &middot; assumptions v14</div>
+        </div>
+      </div>
+
+      <!-- Collapsible sections -->
+      <sc-for list="{{sections}}" as="s" hint-placeholder-count="4">
+        <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; overflow: hidden;">
+          <div class="tapx" onClick="{{s.toggle}}" style="padding: 13px 15px; display: flex; align-items: center; gap: 10px;">
+            <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+              <div style="font-size: 13.5px; font-weight: 650;">{{s.title}}</div>
+              <div style="font-size: 12px; color: {{t.dim}};">{{s.summary}}</div>
+            </div>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{t.chev}}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; transform: {{s.rot}};"><path d="m6 9 6 6 6-6"></path></svg>
+          </div>
+          <sc-if value="{{s.open}}" hint-placeholder-val="{{ true }}">
+            <div style="padding: 0 15px 14px 15px; display: flex; flex-direction: column; gap: 9px;">
+              <div style="height: 0.5px; background: {{t.hair}}; margin-bottom: 3px;"></div>
+              <sc-for list="{{s.rows}}" as="r" hint-placeholder-count="4">
+                <div style="display: flex; align-items: baseline; gap: 10px;">
+                  <div style="flex-grow: 1; font-size: 12.5px; color: {{t.dim}}; line-height: 17px;">{{r.label}}</div>
+                  <div class="num" style="flex-shrink: 0; font-size: 12.5px; font-weight: 620; color: {{r.color}};">{{r.val}}</div>
+                </div>
+              </sc-for>
+              <sc-if value="{{s.note}}" hint-placeholder-val="{{ true }}">
+                <div style="font-size: 12px; line-height: 17px; color: {{t.dim}}; background: {{t.chipbg}}; border-radius: 9px; padding: 10px 11px; margin-top: 2px;">{{s.note}}</div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+
+      <div style="padding: 10px 4px 4px 4px; font-size: 10.5px; line-height: 15px; color: {{t.faint}};">Research only, not investment advice. Fundamentals as of Q3 FY25 filing &middot; prices 4:15 PM ET.</div>
+    </div>
+
+    <!-- Sticky action bar -->
+    <div style="position: sticky; bottom: 0; left: 0; right: 0; padding: 10px 16px 12px 16px; background: {{t.barbg}}; border-top: 0.5px solid {{t.hair}}; display: flex; gap: 9px; backdrop-filter: blur(20px);">
+      <div class="tapx" onClick="{{runAnalysis}}" style="flex-grow: 1; text-align: center; font-size: 14.5px; font-weight: 640; color: #FFFFFF; background: {{t.accent}}; border-radius: 11px; padding: 12px 0;">Analyze now</div>
+      <div class="tapx" onClick="{{openCompare}}" style="flex-shrink: 0; font-size: 14.5px; font-weight: 620; color: {{t.accent}}; background: {{t.accentbg}}; border-radius: 11px; padding: 12px 20px;">Compare</div>
+    </div>
+    </sc-if>
+
+    <!-- ---------- ALERTS ---------- -->
+    <sc-if value="{{isAlerts}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 24px 16px;">
+
+      <div style="display: flex; gap: 6px;">
+        <sc-for list="{{alertFilters}}" as="f" hint-placeholder-count="4">
+          <div class="tapx" onClick="{{f.pick}}" style="font-size: 12.5px; font-weight: {{f.weight}}; min-height: 40px; display: flex; align-items: center; padding: 6px 14px; border-radius: 9px; background: {{f.bg}}; color: {{f.fg}}; border: 0.5px solid {{f.border}};">{{f.label}}</div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{alertsEmpty}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 54px 24px;">
+          <div style="width: 42px; height: 42px; border-radius: 13px; background: {{t.chipbg}}; display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{t.faint}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          </div>
+          <div style="font-size: 14.5px; font-weight: 620;">Nothing here</div>
+          <div style="font-size: 12.5px; line-height: 17px; color: {{t.dim}}; text-align: center; max-width: 250px;">{{emptyMsg}}</div>
+          <div class="tapx" onClick="{{clearFilter}}" style="margin-top: 4px; font-size: 13px; font-weight: 620; color: {{t.accent}}; min-height: 44px; display: flex; align-items: center; padding: 0 16px;">Show all alerts</div>
+        </div>
+      </sc-if>
+
+      <sc-for list="{{alertDays}}" as="d" hint-placeholder-count="2">
+        <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 6px;">
+          <div style="font-size: 12px; font-weight: 650; letter-spacing: 0.6px; text-transform: uppercase; color: {{t.dim}}; padding-left: 2px;">{{d.label}}</div>
+          <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;">
+            <sc-for list="{{d.items}}" as="a" hint-placeholder-count="3">
+              <div class="tapx" onClick="{{a.open}}" style="padding: 12px 14px; display: flex; align-items: flex-start; gap: 11px; border-top: {{a.rule}}; background: {{a.rowbg}};">
+                <div style="width: 27px; height: 27px; border-radius: 8px; background: {{a.iconbg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;">
+                  <div style="width: 15px; height: 15px;">{{a.icon}}</div>
+                </div>
+                <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+                  <div style="display: flex; align-items: baseline; gap: 7px;">
+                    <div style="font-size: 13.5px; font-weight: 640; letter-spacing: -0.1px;">{{a.title}}</div>
+                    <div class="num" style="font-size: 10.5px; color: {{t.faint}}; margin-left: auto; flex-shrink: 0;">{{a.time}}</div>
+                  </div>
+                  <div style="font-size: 12px; line-height: 16.5px; color: {{t.dim}};">{{a.body}}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="padding: 14px 4px 4px 4px; font-size: 10.5px; line-height: 15px; color: {{t.faint}};">Only material events generate alerts. Adjust thresholds in Me &rsaquo; Notifications. Research only, not investment advice.</div>
+    </div>
+    </sc-if>
+
+    <!-- ---------- ME ---------- -->
+    <sc-if value="{{isMe}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 24px 16px;">
+      <sc-for list="{{meGroups}}" as="g" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 12px; font-weight: 650; letter-spacing: 0.6px; text-transform: uppercase; color: {{t.dim}}; padding: 8px 2px 0 2px;">{{g.title}}</div>
+          <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;">
+            <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+              <div class="tapx" onClick="{{r.open}}" style="padding: 13px 14px; min-height: 44px; display: flex; align-items: center; gap: 11px; border-top: {{r.rule}};">
+                <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+                  <div style="font-size: 14px; font-weight: 600;">{{r.label}}</div>
+                  <sc-if value="{{r.sub}}" hint-placeholder-val="{{ true }}">
+                    <div style="font-size: 12px; color: {{t.dim}};">{{r.sub}}</div>
+                  </sc-if>
+                </div>
+                <div class="num" style="flex-shrink: 0; font-size: 13px; font-weight: 600; color: {{t.dim}};">{{r.val}}</div>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{t.chev}}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"></path></svg>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="background: {{t.amberbg}}; border-radius: 12px; padding: 13px 14px; margin-top: 6px; display: flex; flex-direction: column; gap: 5px;">
+        <div style="font-size: 12.5px; font-weight: 650; color: {{t.amberfg}};">Research, not advice</div>
+        <div style="font-size: 12px; line-height: 17px; color: {{t.amberfg}};">This app provides research and decision support. It does not give investment advice, does not guarantee returns, and never places trades. Targets such as 12% CAGR are objectives with a probability, not promises.</div>
+      </div>
+    </div>
+    </sc-if>
+
+  </div>
+
+  <!-- ============ TAB BAR ============ -->
+  <div style="flex-shrink: 0; display: flex; background: {{t.barbg}}; border-top: 0.5px solid {{t.hair}}; padding: 7px 6px 22px 6px; backdrop-filter: blur(20px); position: relative; z-index: 5;">
+    <sc-for list="{{tabs}}" as="tb" hint-placeholder-count="5">
+      <div class="tapx" onClick="{{tb.pick}}" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0;">
+        <div style="width: 24px; height: 24px; position: relative;">
+          <div style="width: 24px; height: 24px;">{{tb.icon}}</div>
+          <sc-if value="{{tb.badge}}" hint-placeholder-val="{{ true }}">
+            <div class="num" style="position: absolute; top: -3px; right: -6px; min-width: 15px; height: 15px; border-radius: 8px; background: {{t.down}}; color: #FFFFFF; font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 4px;">{{tb.badge}}</div>
+          </sc-if>
+        </div>
+        <div style="font-size: 10px; font-weight: {{tb.weight}}; color: {{tb.color}}; letter-spacing: 0.1px;">{{tb.label}}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- ============ SHEET ============ -->
+  <sc-if value="{{sheet}}" hint-placeholder-val="{{ true }}">
+  <div style="position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; justify-content: flex-end;">
+    <div class="tapx" onClick="{{closeSheet}}" style="position: absolute; inset: 0; background: rgba(0,0,0,0.32);"></div>
+    <div style="position: relative; background: {{t.sheetbg}}; border-radius: 18px 18px 0 0; max-height: 74%; display: flex; flex-direction: column; box-shadow: 0 -8px 32px rgba(0,0,0,0.18);">
+      <div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 8px 0 4px 0;">
+        <div style="width: 36px; height: 4.5px; border-radius: 3px; background: {{t.grabber}};"></div>
+      </div>
+      <div style="flex-shrink: 0; padding: 6px 18px 12px 18px; display: flex; align-items: flex-start; gap: 12px;">
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+          <div style="font-size: 18px; font-weight: 680; letter-spacing: -0.3px; line-height: 23px;">{{sheet.title}}</div>
+          <div style="font-size: 12px; color: {{t.dim}};">{{sheet.sub}}</div>
+        </div>
+        <div class="tapx" onClick="{{closeSheet}}" style="flex-shrink: 0; width: 44px; height: 44px; border-radius: 22px; background: {{t.chipbg}}; display: flex; align-items: center; justify-content: center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{t.dim}}" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </div>
+      </div>
+      <div class="scroll" style="flex-grow: 1; padding: 0 18px 26px 18px; display: flex; flex-direction: column; gap: 11px;">
+        <sc-for list="{{sheet.blocks}}" as="b" hint-placeholder-count="3">
+          <div style="display: flex; flex-direction: column; gap: 7px;">
+            <sc-if value="{{b.heading}}" hint-placeholder-val="{{ true }}">
+              <div style="font-size: 11px; font-weight: 650; letter-spacing: 0.5px; text-transform: uppercase; color: {{t.dim}};">{{b.heading}}</div>
+            </sc-if>
+            <sc-if value="{{b.text}}" hint-placeholder-val="{{ true }}">
+              <div style="font-size: 13.5px; line-height: 19.5px; color: {{b.textcolor}}; white-space: pre-line;">{{b.text}}</div>
+            </sc-if>
+            <sc-if value="{{b.rows}}" hint-placeholder-val="{{ true }}">
+              <div style="background: {{t.card}}; border: 0.5px solid {{t.hair}}; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
+                <sc-for list="{{b.rows}}" as="r" hint-placeholder-count="3">
+                  <div style="padding: 10px 13px; display: flex; align-items: baseline; gap: 10px; border-top: {{r.rule}};">
+                    <div style="flex-grow: 1; font-size: 12.5px; color: {{t.dim}}; line-height: 17px;">{{r.label}}</div>
+                    <div class="num" style="flex-shrink: 0; font-size: 12.5px; font-weight: 620; color: {{r.color}};">{{r.val}}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{sheet.cta}}" hint-placeholder-val="{{ true }}">
+          <div class="tapx" onClick="{{sheet.ctaAction}}" style="margin-top: 4px; text-align: center; font-size: 14.5px; font-weight: 640; color: #FFFFFF; background: {{t.accent}}; border-radius: 11px; padding: 12px 0;">{{sheet.cta}}</div>
+        </sc-if>
+        <div style="font-size: 10.5px; line-height: 15px; color: {{t.faint}}; padding-top: 4px;">{{sheet.foot}}</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ ANALYSIS PROGRESS ============ -->
+  <sc-if value="{{running}}" hint-placeholder-val="{{ true }}">
+  <div style="position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.34);">
+    <div style="width: 274px; background: {{t.sheetbg}}; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.24);">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <div style="font-size: 15.5px; font-weight: 660; letter-spacing: -0.2px;">Analyzing {{tk.ticker}}</div>
+        <div style="font-size: 12px; color: {{t.dim}};">Chief Analyst is gathering evidence</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <div style="width: 16px; height: 16px; flex-shrink: 0;">{{s.icon}}</div>
+            <div style="flex-grow: 1; font-size: 12.5px; color: {{s.color}}; font-weight: {{s.weight}};">{{s.label}}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div class="tapx" onClick="{{cancelRun}}" style="text-align: center; font-size: 13.5px; font-weight: 600; color: {{t.dim}}; padding: 4px 0 0 0;">Cancel</div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light","section":"Appearance"},"accent":{"editor":"color","default":"#2B5FA8","options":["#2B5FA8","#1F6F5C","#7A4B8C","#B4552A"],"section":"Appearance"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      tab: 'today',
+      sheet: null,
+      running: false,
+      runStep: 0,
+      range: '1D',
+      exposure: 'Sector',
+      ticker: 'AAPL',
+      starred: true,
+      open: { earn: true, driving: false, tech: false, fit: false },
+      filter: 'All',
+    };
+  }
+
+  componentWillUnmount() { if (this._t) clearInterval(this._t); }
+
+  palette() {
+    const dark = this.props.theme === 'dark';
+    const accent = this.props.accent ?? '#2B5FA8';
+    if (dark) {
+      return { dark: true, accent,
+        bg: '#0E1013', navbg: '#15181D', barbg: 'rgba(21,24,29,0.94)', card: '#191D23', sheetbg: '#1C2027',
+        text: '#F2F4F7', dim: '#9AA3AF', faint: '#6B7280', hair: '#282D35', track: '#282D35', chipbg: '#22272F',
+        up: '#4ADE80', down: '#F87171', good: '#4ADE80', amber: '#FBBF24', amberbg: 'rgba(251,191,36,0.13)', amberfg: '#FCD34D',
+        accentbg: 'rgba(96,150,220,0.15)', accentline: 'rgba(96,150,220,0.35)', bandfill: 'rgba(96,150,220,0.42)',
+        chev: '#4B535F', grabber: '#3A4049', inactive: '#7A828E' };
+    }
+    return { dark: false, accent,
+      bg: '#F4F5F7', navbg: '#FBFBFC', barbg: 'rgba(251,251,252,0.94)', card: '#FFFFFF', sheetbg: '#FBFBFC',
+      text: '#14171C', dim: '#697280', faint: '#98A0AC', hair: '#E4E7EB', track: '#EAECF0', chipbg: '#EFF1F4',
+      up: '#127A4B', down: '#C0392F', good: '#127A4B', amber: '#B4771A', amberbg: 'rgba(197,138,32,0.10)', amberfg: '#8A5C12',
+      accentbg: 'rgba(43,95,168,0.08)', accentline: 'rgba(43,95,168,0.22)', bandfill: 'rgba(43,95,168,0.28)',
+      chev: '#C2C8D0', grabber: '#D4D8DE', inactive: '#8B93A0' };
+  }
+
+  icon(path, color, fill) {
+    return { __html: '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="' + (fill || 'none') + '" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>' };
+  }
+
+  svg(path, color, fill, width) {
+    const el = document.createElement('span');
+    el.style.display = 'block';
+    el.style.width = '100%';
+    el.style.height = '100%';
+    el.innerHTML = '<svg width="100%" height="100%" viewBox="0 0 24 24" fill="' + (fill || 'none') + '" stroke="' + color + '" stroke-width="' + (width || 2) + '" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
+    return el;
+  }
+
+  rule(i, t) { return i === 0 ? 'none' : '0.5px solid ' + t.hair; }
+
+  go(tab) { return () => this.setState({ tab, sheet: null }); }
+
+  show(sheet) { return () => this.setState({ sheet }); }
+
+  // ---- sheet content ----
+  sheetFor(key, t) {
+    const S = {
+      concentration: {
+        title: 'Tech concentration rose to 37%',
+        sub: 'Risk change · detected 4:15 PM ET',
+        blocks: [
+          { text: 'Technology is now 37% of portfolio value, up from 34% yesterday. The increase came from price appreciation, not new buying.', textcolor: t.text },
+          { heading: 'Why it matters', text: 'Sector weight counts only the three direct tech holdings. The graph engine adds the share of QQQ and VTI that sits in the same supply chain, taking effective concentration to 49% — these names tend to move together on the same news.', textcolor: t.dim },
+          { heading: 'Shared dependency', rows: [
+            { label: 'AAPL → TSMC (foundry)', val: '14.2%', color: t.text },
+            { label: 'MSFT → NVDA (AI capex)', val: '12.4%', color: t.text },
+            { label: 'NVDA → TSMC (foundry)', val: '10.4%', color: t.text },
+            { label: 'QQQ → look-through 55%', val: '9.9%', color: t.text },
+            { label: 'VTI → look-through 10%', val: '2.3%', color: t.text },
+            { label: 'Effective cluster', val: '49.2%', color: t.amber },
+          ] },
+          { heading: 'Model disagreement', text: 'Risk engine flags concentration. ML ranking still scores AAPL 81/100. Both are shown — neither overrides the other.', textcolor: t.dim },
+        ],
+        cta: 'Open exposure breakdown',
+        ctaAction: () => this.setState({ tab: 'portfolio', exposure: 'Hidden', sheet: null }),
+        foot: 'Source: Memgraph relationship set, refreshed 4:15 PM ET · risk engine v2.1. Research only, not investment advice.',
+      },
+      earnings: {
+        title: 'MSFT reports Q1 FY26',
+        sub: 'Catalyst · tomorrow after close',
+        blocks: [
+          { heading: 'Consensus', rows: [
+            { label: 'Revenue expected', val: '$68.4B', color: t.text },
+            { label: 'EPS expected', val: '$3.11', color: t.text },
+            { label: 'Azure growth expected', val: '+28%', color: t.text },
+            { label: 'Implied move (options)', val: '±4.2%', color: t.dim },
+          ] },
+          { heading: 'What to watch', text: 'Azure growth and AI capex guidance matter more than the headline beat. Last quarter revenue and EPS both beat while margins compressed 180bp on datacenter spend — the stock fell 3% anyway.', textcolor: t.dim },
+          { heading: 'Position', rows: [
+            { label: 'Weight in portfolio', val: '12.4%', color: t.text },
+            { label: 'Cost basis', val: '$362.40', color: t.text },
+            { label: 'Unrealized', val: '+18.3%', color: t.up },
+          ] },
+        ],
+        foot: 'Estimates as of 4:15 PM ET from consensus provider. Forecasts, not facts. Not investment advice.',
+      },
+      fed: {
+        title: 'FOMC rate decision',
+        sub: 'Catalyst · Thursday 2:00 PM ET',
+        blocks: [
+          { heading: 'Market pricing', rows: [
+            { label: 'Hold', val: '78%', color: t.text },
+            { label: '25bp cut', val: '22%', color: t.text },
+            { label: '10Y yield', val: '4.18%', color: t.text },
+          ] },
+          { heading: 'Portfolio sensitivity', text: 'Estimated beta to rates is −0.6 across the portfolio, concentrated in long-duration tech. A hawkish surprise hits the four semiconductor-linked positions hardest — the same cluster already flagged for concentration.', textcolor: t.dim },
+        ],
+        foot: 'Rate probabilities from futures market, as of 4:15 PM ET. Sensitivity is a model estimate, not a forecast of returns.',
+      },
+      methods: {
+        title: 'Valuation methods',
+        sub: 'AAPL · assumptions v14 · as of Q3 FY25',
+        blocks: [
+          { text: 'Every method is a range built on stated assumptions. They disagree — that disagreement is the signal, not something to average away.', textcolor: t.dim },
+          { heading: 'Ranges', rows: [
+            { label: 'DCF (9.1% WACC, 3% terminal)', val: '$188 – $225', color: t.text },
+            { label: 'Peer multiple (12 comps)', val: '$176 – $208', color: t.text },
+            { label: 'Historical fwd P/E band', val: '$168 – $199', color: t.text },
+            { label: 'EV/EBITDA', val: '$171 – $204', color: t.text },
+            { label: 'P/FCF', val: '$182 – $216', color: t.text },
+          ] },
+          { heading: 'Blended', rows: [
+            { label: 'Bear', val: '$145', color: t.down },
+            { label: 'Base', val: '$198', color: t.text },
+            { label: 'Bull', val: '$225', color: t.up },
+            { label: 'Current price', val: '$180', color: t.text },
+          ] },
+          { heading: 'Disagreement', text: 'DCF is the most optimistic and leans on the terminal growth assumption. The historical band is the most conservative and already prices in a multiple contraction. Base case sits between them.', textcolor: t.dim },
+        ],
+        foot: 'Computed by the quant engine from filed financials and consensus estimates. Forecast ranges, never price targets. Not investment advice.',
+      },
+      compare: {
+        title: 'Compare',
+        sub: 'AAPL · MSFT · NVDA',
+        blocks: [
+          { text: 'Is NVDA’s 31% growth worth paying 55× earnings? On these numbers you are paying roughly 1.8× the multiple for 2.2× the growth — defensible only if that growth holds for three more years.', textcolor: t.text },
+          { heading: 'Growth', rows: [
+            { label: 'AAPL', val: '14%', color: t.text },
+            { label: 'MSFT', val: '20%', color: t.text },
+            { label: 'NVDA', val: '31%', color: t.up },
+          ] },
+          { heading: 'Forward P/E', rows: [
+            { label: 'AAPL', val: '19×', color: t.up },
+            { label: 'MSFT', val: '28×', color: t.text },
+            { label: 'NVDA', val: '55×', color: t.text },
+          ] },
+          { heading: 'Operating margin', rows: [
+            { label: 'AAPL', val: '25%', color: t.text },
+            { label: 'MSFT', val: '31%', color: t.text },
+            { label: 'NVDA', val: '35%', color: t.up },
+          ] },
+          { heading: 'Portfolio fit', text: 'All three already sit in the flagged semiconductor cluster, which is 49% today against a 35% limit. Adding to any of them widens the breach — UNH is the only name on the opportunity list that does not.', textcolor: t.dim },
+        ],
+        foot: 'Full compare screen is out of scope for this prototype. Metrics from the quant engine, as of last filing. Not investment advice.',
+      },
+      done: {
+        title: 'Analysis complete',
+        sub: 'AAPL · 6 agents · 14.2s · run #4127',
+        blocks: [
+          { text: 'Fundamentals hold up and the balance sheet is unchanged. Valuation is full but not stretched against the historical band. Momentum is strong. The one thing that changed today is portfolio-level: AAPL now sits inside a four-position semiconductor cluster.', textcolor: t.text },
+          { heading: 'Agents invoked', rows: [
+            { label: 'Fundamental', val: 'no change', color: t.dim },
+            { label: 'Technical', val: 'trend intact', color: t.dim },
+            { label: 'News', val: '2 material', color: t.text },
+            { label: 'Macro', val: 'risk-on', color: t.dim },
+            { label: 'Graph', val: 'concentration ↑', color: t.amber },
+            { label: 'Portfolio', val: 'at weight cap', color: t.amber },
+          ] },
+          { heading: 'Disagreement', text: 'ML ranking: 81/100 bullish.\nValuation: rich vs. peers.\nBoth stand. Neither is averaged into the other.', textcolor: t.dim },
+        ],
+        cta: 'Read full report',
+        ctaAction: () => this.setState({ sheet: null }),
+        foot: 'Models: ranking v2.1 · valuation v14 · graph 2026-09-05. Every number from a deterministic engine. Not investment advice.',
+      },
+      add: {
+        title: 'Add position',
+        sub: 'Entry is validated against market data',
+        blocks: [
+          { heading: 'Fields', rows: [
+            { label: 'Ticker', val: 'search', color: t.dim },
+            { label: 'Quantity', val: '—', color: t.dim },
+            { label: 'Cost basis', val: '—', color: t.dim },
+            { label: 'Opened', val: 'today', color: t.dim },
+          ] },
+          { text: 'Form entry is out of scope for this prototype — this sheet shows where it lives and what it validates.', textcolor: t.dim },
+        ],
+        foot: 'Positions are stored per user with row-level security. Nothing is ever traded from this app.',
+      },
+    };
+    return S[key] || null;
+  }
+
+  holdingSheet(h, t) {
+    return {
+      title: h.ticker + ' · ' + h.name,
+      sub: h.weight + ' of portfolio · thesis ' + h.thesisWord,
+      blocks: [
+        { text: h.note, textcolor: t.text },
+        { heading: 'Position', rows: [
+          { label: 'Weight', val: h.weight, color: t.text },
+          { label: 'Today', val: h.change, color: h.color },
+          { label: 'Unrealized', val: h.unreal, color: h.unrealColor },
+        ] },
+      ],
+      cta: 'Open in Research',
+      ctaAction: () => this.setState({ tab: 'research', ticker: h.research || 'AAPL', sheet: null }),
+      foot: 'Prices as of 4:15 PM ET. Research only, not investment advice.',
+    };
+  }
+
+  alertSheet(a, t) {
+    return {
+      title: a.title,
+      sub: a.kind + ' · ' + a.time,
+      blocks: [
+        { text: a.detail, textcolor: t.text },
+        { heading: 'Evidence', rows: a.rows.map((r, i) => ({ label: r[0], val: r[1], color: r[2] === 'a' ? t.amber : t.text, rule: this.rule(i, t) })) },
+      ],
+      foot: 'Materiality scored by the news agent, thresholds in Me › Notifications. Not investment advice.',
+    };
+  }
+
+  renderVals() {
+    const t = this.palette();
+    const st = this.state;
+    const S = (k) => () => this.setState({ sheet: k });
+
+    // ---- tabs ----
+    const unreadCount = 2;
+    const tabDefs = [
+      { id: 'today', label: 'Today', path: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path>' },
+      { id: 'portfolio', label: 'Portfolio', path: '<path d="M3 3v16a2 2 0 0 0 2 2h16"></path><path d="M7 15l4-5 4 3 5-7"></path>' },
+      { id: 'research', label: 'Research', path: '<circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path>' },
+      { id: 'alerts', label: 'Alerts', path: '<path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"></path><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>', badge: unreadCount ? String(unreadCount) : null },
+      { id: 'me', label: 'Me', path: '<circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path>' },
+    ];
+    const tabs = tabDefs.map((d) => {
+      const on = st.tab === d.id;
+      return { label: d.label, badge: d.badge, weight: on ? 640 : 500,
+        color: on ? t.accent : t.inactive,
+        icon: this.svg(d.path, on ? t.accent : t.inactive, 'none', on ? 2.2 : 1.9),
+        pick: this.go(d.id) };
+    });
+
+    // ---- screen chrome ----
+    const chrome = {
+      today: { title: 'Today', sub: 'Market closed · nothing needs action tonight', stamp: 'as of 4:15 PM' },
+      portfolio: { title: 'Portfolio', sub: '6 positions · moderate risk', stamp: 'as of 4:15 PM' },
+      research: { title: 'Research', sub: 'Search, analyze, compare', stamp: 'as of 4:15 PM' },
+      alerts: { title: 'Alerts', sub: '2 unread · material only', stamp: 'live' },
+      me: { title: 'Me', sub: 'Goals, notifications, disclaimers', stamp: '' },
+    };
+    const screen = chrome[st.tab] || chrome.today;
+
+    // ---- today ----
+    const catalystDefs = [
+      { mon: 'Sep', day: '6', title: 'MSFT reports Q1 FY26', sub: 'After close · you hold 12.4%', key: 'earnings' },
+      { mon: 'Sep', day: '8', title: 'FOMC rate decision', sub: '2:00 PM · portfolio beta −0.6', key: 'fed' },
+    ];
+    const catalysts = catalystDefs.map((c, i) => ({ ...c, rule: this.rule(i, t), open: S(c.key) }));
+
+    const oppDefs = [
+      { ticker: 'AAPL', score: '81', thesis: 'Services margin holding; trades below its 5-year multiple band', tone: 'good' },
+      { ticker: 'MSFT', score: '79', thesis: 'Azure reacceleration, but capex compresses near-term margins', tone: 'good' },
+      { ticker: 'UNH', score: '76', thesis: 'Adds a non-tech leg; the only candidate outside the 49% cluster', tone: 'mid' },
+    ];
+    const opps = oppDefs.map((o, i) => ({ ...o, rule: this.rule(i, t),
+      scorebg: o.tone === 'good' ? t.accentbg : t.chipbg,
+      scorefg: o.tone === 'good' ? t.accent : t.dim,
+      open: () => this.setState({ tab: 'research', ticker: o.ticker, sheet: null }) }));
+
+    const pill = (p) => {
+      if (p === 'Watch') return [t.accentbg, t.accent];
+      if (p === 'Hold') return [t.chipbg, t.dim];
+      if (p === 'Research') return [t.amberbg, t.amberfg];
+      return [t.chipbg, t.dim];
+    };
+    const actionDefs = [
+      { ticker: 'AAPL', why: 'At weight cap — watch the cluster, not the price', pill: 'Watch' },
+      { ticker: 'MSFT', why: 'Earnings tomorrow; no action before the print', pill: 'Hold' },
+      { ticker: 'NVDA', why: 'Largest contributor to shared supply-chain risk', pill: 'Research' },
+      { ticker: 'QQQ', why: '55% of it sits in the cluster; trimming cuts duplication', pill: 'Research' },
+    ];
+    const actions = actionDefs.map((a, i) => {
+      const [bg, fg] = pill(a.pill);
+      return { ...a, rule: this.rule(i, t), pillbg: bg, pillfg: fg,
+        open: () => this.setState({ tab: 'research', ticker: a.ticker, sheet: null }) };
+    });
+
+    // ---- portfolio ----
+    const ranges = ['1D', '1W', '1M', 'YTD', '1Y'].map((r) => {
+      const on = st.range === r;
+      return { label: r, weight: on ? 640 : 520,
+        bg: on ? t.card : 'transparent', fg: on ? t.text : t.dim,
+        shadow: on ? '0 1px 3px rgba(0,0,0,0.10)' : 'none',
+        pick: () => this.setState({ range: r }) };
+    });
+
+    const subscores = [
+      { label: 'Diversification', val: '71', pct: '71%', color: t.amber, word: 'attention' },
+      { label: 'Risk', val: '86', pct: '86%', color: t.good, word: 'good' },
+      { label: 'Quality', val: '92', pct: '92%', color: t.good, word: 'good' },
+    ];
+
+    const expTabs = ['Sector', 'Geography', 'Theme', 'Hidden'].map((e) => {
+      const on = st.exposure === e;
+      return { label: e, weight: on ? 640 : 520,
+        bg: on ? t.card : 'transparent', fg: on ? t.text : t.dim,
+        shadow: on ? '0 1px 3px rgba(0,0,0,0.10)' : 'none',
+        pick: () => this.setState({ exposure: e }) };
+    });
+
+    const sets = {
+      Sector: { top: { val: '37%', label: 'Technology' }, note: 'Direct tech holdings only: AAPL 14.2% + MSFT 12.4% + NVDA 10.4%. Index funds are counted in Broad index, not here.', parts: [
+        ['Technology', 37, t.accent], ['Broad index', 41, '#7C93B8'], ['Healthcare', 12, '#9AAFC9'], ['Cash', 10, t.track] ] },
+      Geography: { top: { val: '81%', label: 'United States' }, note: null, parts: [
+        ['United States', 81, t.accent], ['Taiwan (indirect)', 6, '#7C93B8'], ['Europe', 3, '#9AAFC9'], ['Cash', 10, t.track] ] },
+      Theme: { top: { val: '31%', label: 'AI infra' }, note: 'Look-through: counts the share of each index fund that sits in the theme, not the whole fund.', parts: [
+        ['AI infrastructure', 31, t.accent], ['Broad equity', 26, '#7C93B8'], ['Consumer tech', 21, '#9AAFC9'], ['Defensive', 12, '#BCCADB'], ['Cash', 10, t.track] ] },
+      Hidden: { top: { val: '49%', label: 'Cluster' },
+        note: 'Four positions share semiconductor supply-chain exposure through TSMC: AAPL 14.2% + MSFT 12.4% + NVDA 10.4% direct, plus 9.9% of QQQ and 2.3% of VTI by look-through. That is 49% against a 37% sector weight — the gap is what the graph engine adds.',
+        parts: [ ['Semi supply chain', 49, t.amber], ['Unclustered equity', 41, '#9AAFC9'], ['Cash', 10, t.track] ] },
+    };
+    const set = sets[st.exposure] || sets.Sector;
+    const C = 2 * Math.PI * 42;
+    let acc = 0;
+    const donut = set.parts.map((p) => {
+      const len = (p[1] / 100) * C;
+      const seg = { label: p[0], pct: p[1] + '%', color: p[2],
+        dash: len.toFixed(2) + ' ' + (C - len).toFixed(2),
+        offset: (-acc).toFixed(2) };
+      acc += len;
+      return seg;
+    });
+
+    const changeDefs = [
+      { title: 'Tech concentration 34% → 37%', why: 'Price appreciation in AAPL and NVDA, no new buying · cluster 49%', dot: t.amber, key: 'concentration' },
+      { title: 'Target probability 45% → 47%', why: 'Lower realized volatility this week widened the path to 12% CAGR', dot: t.good, key: null },
+    ];
+    const changes = changeDefs.map((c, i) => ({ ...c, rule: this.rule(i, t),
+      open: c.key ? S(c.key) : () => this.setState({ tab: 'today', sheet: null }) }));
+
+    const bars = (seed) => {
+      const out = [];
+      let v = seed;
+      for (let i = 0; i < 14; i++) {
+        v = (v * 9301 + 49297) % 233280;
+        out.push({ h: (30 + (v / 233280) * 70).toFixed(0) + '%' });
+      }
+      return out;
+    };
+    const holdingDefs = [
+      { ticker: 'AAPL', name: 'Apple', weight: '14.2%', change: '+1.24%', up: true, thesis: 'amber', thesisWord: 'under review', unreal: '+22.8%', unrealUp: true, research: 'AAPL',
+        note: 'Thesis under review — not because of Apple, but because it now sits inside the flagged semiconductor cluster. Fundamentals unchanged since the Q3 filing.' },
+      { ticker: 'VTI', name: 'Vanguard Total', weight: '23.0%', change: '+0.55%', up: true, thesis: 'green', thesisWord: 'intact', unreal: '+11.9%', unrealUp: true, research: 'AAPL',
+        note: 'Broad market core. Contributes about 2.3% of tech exposure by look-through, far less concentrated than QQQ.' },
+      { ticker: 'QQQ', name: 'Invesco QQQ', weight: '18.0%', change: '+0.91%', up: true, thesis: 'amber', thesisWord: 'under review', unreal: '+14.1%', unrealUp: true, research: 'AAPL',
+        note: 'Overlaps all three individual tech holdings. Roughly 55% of it sits in the flagged cluster — trimming here cuts duplication without changing market exposure much.' },
+      { ticker: 'MSFT', name: 'Microsoft', weight: '12.4%', change: '+0.62%', up: true, thesis: 'green', thesisWord: 'intact', unreal: '+18.3%', unrealUp: true, research: 'MSFT',
+        note: 'Thesis intact. Reports tomorrow after close — Azure growth and capex guidance matter more than the headline beat.' },
+      { ticker: 'UNH', name: 'UnitedHealth', weight: '12.0%', change: '−0.43%', up: false, thesis: 'green', thesisWord: 'intact', unreal: '+4.2%', unrealUp: true, research: 'UNH',
+        note: 'Thesis intact. The only position with no overlap into the semiconductor cluster — it is what keeps diversification from scoring lower.' },
+      { ticker: 'NVDA', name: 'NVIDIA', weight: '10.4%', change: '+2.08%', up: true, thesis: 'amber', thesisWord: 'under review', unreal: '+61.4%', unrealUp: true, research: 'NVDA',
+        note: 'Largest single contributor to the shared supply-chain exposure. Valuation is the most stretched in the portfolio at 55× forward earnings.' },
+      { ticker: 'Cash', name: 'Cash & equivalents', weight: '10.0%', change: '—', up: null, thesis: 'none', thesisWord: 'n/a', unreal: '—', unrealUp: null, research: null, cash: true,
+        note: 'Held as dry powder. Counts toward the exposure rings, which is why holdings and rings both total 100%.' },
+    ];
+    const holdings = holdingDefs.map((h, i) => {
+      const color = h.cash ? t.dim : (h.up ? t.up : t.down);
+      const row = { ...h, rule: this.rule(i, t), color,
+        sparkcolor: h.cash ? t.track : color, spark: bars(i * 137 + 11),
+        unrealColor: h.unrealUp === null ? t.dim : (h.unrealUp ? t.up : t.down),
+        mark: h.thesis === 'green' ? '\u2713' : h.thesis === 'amber' ? '!' : h.thesis === 'none' ? '\u00b7' : '\u00d7',
+        markColor: h.thesis === 'green' ? t.good : h.thesis === 'amber' ? t.amber : t.dim,
+        markBg: h.thesis === 'green' ? (t.dark ? 'rgba(74,222,128,0.14)' : 'rgba(18,122,75,0.09)')
+          : h.thesis === 'amber' ? t.amberbg : t.chipbg,
+        dot: h.thesis === 'green' ? t.good : (h.thesis === 'amber' ? t.amber : t.dim) };
+      row.open = () => this.setState({ sheet: this.holdingSheet(row, t) });
+      return row;
+    });
+
+    // ---- research ----
+    const tkDefs = {
+      AAPL: { ticker: 'AAPL', name: 'Apple Inc.', price: '$180.42', change: '+1.24%', up: true,
+        verdict: 'Fundamentals are intact and the balance sheet is unchanged. The stock trades below its own 5-year multiple band, but it now sits inside a four-position cluster that shares semiconductor supply-chain risk — the portfolio question, not the company, is what changed.',
+        chips: [['Fundamentals', 'Solid', 'g'], ['Valuation', 'Fair', 'n'], ['Momentum', 'Strong', 'g']] },
+      MSFT: { ticker: 'MSFT', name: 'Microsoft Corp.', price: '$428.90', change: '+0.62%', up: true,
+        verdict: 'Azure growth is reaccelerating, but datacenter capex compressed operating margin 180bp last quarter. Earnings tomorrow after close will settle whether the spend is buying growth or just cost.',
+        chips: [['Fundamentals', 'Solid', 'g'], ['Valuation', 'Rich', 'a'], ['Momentum', 'Strong', 'g']] },
+      NVDA: { ticker: 'NVDA', name: 'NVIDIA Corp.', price: '$121.35', change: '+2.08%', up: true,
+        verdict: 'Growth and margins are the best in the portfolio, and so is the price you pay for them at 55× forward earnings. It is also the single largest contributor to the shared supply-chain exposure flagged today.',
+        chips: [['Fundamentals', 'Strong', 'g'], ['Valuation', 'Stretched', 'a'], ['Momentum', 'Strong', 'g']] },
+      UNH: { ticker: 'UNH', name: 'UnitedHealth Group', price: '$521.10', change: '−0.43%', up: false,
+        verdict: 'The only candidate on the list with no overlap into the semiconductor cluster. Ranks lower than AAPL on the model, but scores highest on what this portfolio is actually short of — diversification.',
+        chips: [['Fundamentals', 'Solid', 'g'], ['Valuation', 'Cheap', 'g'], ['Momentum', 'Weak', 'a']] },
+    };
+    const tkd = tkDefs[st.ticker] || tkDefs.AAPL;
+    const chipTone = (x) => x === 'g' ? [t.dark ? 'rgba(74,222,128,0.13)' : 'rgba(18,122,75,0.08)', t.up]
+      : x === 'a' ? [t.amberbg, t.amberfg] : [t.chipbg, t.dim];
+    const tk = { ...tkd, color: tkd.up ? t.up : t.down,
+      starfill: st.starred ? t.accent : 'none',
+      starstroke: st.starred ? t.accent : t.chev,
+      chips: tkd.chips.map((c) => { const [bg, fg] = chipTone(c[2]); return { label: c[0], val: c[1], bg, fg }; }),
+      tickers: ['AAPL', 'MSFT', 'NVDA', 'UNH'].map((x) => {
+        const on = st.ticker === x;
+        return { label: x, weight: on ? 650 : 550,
+          bg: on ? t.accent : t.chipbg, fg: on ? '#FFFFFF' : t.dim,
+          pick: () => this.setState({ ticker: x }) };
+      }) };
+
+    const sectionDefs = [
+      { id: 'earn', title: 'Earnings', summary: 'Beat on both lines, guidance trimmed',
+        rows: [['Revenue actual vs. expected', '$10.5B vs $10.1B', 'u'], ['EPS actual vs. expected', '$2.15 vs $2.03', 'u'],
+               ['Gross margin', '25% vs 28% prior', 'd'], ['Free cash flow', '$11.2B', 'n'], ['FY guidance', '$39B vs $42B prior', 'd']],
+        note: 'Both lines beat, but guidance came down and margins compressed 300bp. The headline beat overstates how good the quarter was for the forward outlook.' },
+      { id: 'driving', title: "What's driving it", summary: '2 material items today',
+        rows: [['Supplier capacity note (material)', 'positive', 'u'], ['Analyst revision, 2 firms', 'positive', 'u'], ['Sector rotation into large-cap tech', 'neutral', 'n'], ['12 other headlines', 'not material', 'n']],
+        note: 'Filtered from 14 headlines. Only items that pass relevance → materiality → thesis impact are shown.' },
+      { id: 'tech', title: 'Technicals', summary: 'Uptrend intact, extended short-term',
+        rows: [['Trend (50/200 DMA)', 'up', 'u'], ['RSI (14)', '68', 'a'], ['Relative volume', '1.4×', 'n'], ['Support / resistance', '$171 / $186', 'n']],
+        note: 'RSI at 68 is extended but not stretched. On its own this says nothing — it matters here only because it coincides with the cluster flag.' },
+      { id: 'fit', title: 'Portfolio fit', summary: 'At weight cap · raises cluster risk',
+        rows: [['Current weight', '14.2%', 'n'], ['Cluster total vs. limit', '49% vs 35%', 'a'], ['Correlation with NVDA', '0.78', 'a'], ['Correlation with QQQ', '0.91', 'a'], ['Adding 1% would take cluster to', '50%', 'a']],
+        note: 'The company scores well. The portfolio does not need more of it — this is exactly the case where stock attractiveness and portfolio fit disagree.' },
+    ];
+    const rowColor = (x) => x === 'u' ? t.up : x === 'd' ? t.down : x === 'a' ? t.amberfg : t.text;
+    const sections = sectionDefs.map((s) => ({
+      title: s.title, summary: s.summary, note: s.note,
+      open: !!st.open[s.id], rot: st.open[s.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+      rows: s.rows.map((r) => ({ label: r[0], val: r[1], color: rowColor(r[2]) })),
+      toggle: () => this.setState({ open: { ...st.open, [s.id]: !st.open[s.id] } }),
+    }));
+
+    // ---- alerts ----
+    const alertDefs = [
+      { day: 'Today', items: [
+        { kind: 'Risk', scope: 'portfolio', title: 'Tech concentration rose to 37%', time: '4:15 PM', unread: true, tone: 'amber',
+          body: 'Four positions share semiconductor supply-chain risk through TSMC.',
+          detail: 'Sector weight moved from 34% to 37% on price appreciation alone. The graph engine finds the effective thematic concentration is closer to 49%.',
+          rows: [['Sector weight', '37%', 'a'], ['Effective cluster', '49%', 'a'], ['Your risk limit', '35%', 'n'], ['Positions involved', '4', 'n']] },
+        { kind: 'Catalyst', scope: 'portfolio', title: 'MSFT reports tomorrow', time: '2:40 PM', unread: true, tone: 'accent',
+          body: 'After close. You hold 12.4%; implied move ±4.2%.',
+          detail: 'Consensus is $68.4B revenue and $3.11 EPS. Azure growth guidance is what moves the stock, not the headline print.',
+          rows: [['Revenue expected', '$68.4B', 'n'], ['EPS expected', '$3.11', 'n'], ['Implied move', '±4.2%', 'n'], ['Your weight', '12.4%', 'n']] },
+        { kind: 'News', scope: 'watchlist', title: 'NVDA supplier capacity note', time: '11:05 AM', unread: false, tone: 'plain',
+          body: 'Material for 3 of your positions through shared foundry exposure.',
+          detail: 'A foundry capacity expansion note is positive for NVDA directly and reaches AAPL and QQQ through the same supplier relationship.',
+          rows: [['Direct', 'NVDA', 'n'], ['Propagated', 'AAPL, QQQ', 'n'], ['Sentiment', 'positive', 'n'], ['Affects thesis', 'no', 'n']] },
+      ] },
+      { day: 'Yesterday', items: [
+        { kind: 'Thesis', scope: 'portfolio', title: 'AAPL thesis moved to under review', time: '4:15 PM', unread: false, tone: 'amber',
+          body: 'Company unchanged; portfolio context changed.',
+          detail: 'Nothing in the fundamentals moved. The status changed because AAPL entered the flagged cluster — a portfolio-level trigger, not a company one.',
+          rows: [['Fundamentals', 'unchanged', 'n'], ['Valuation', 'unchanged', 'n'], ['Cluster membership', 'new', 'a'], ['Action', 'watch', 'n']] },
+        { kind: 'Risk', scope: 'portfolio', title: 'Target probability 45% → 47%', time: '4:15 PM', unread: false, tone: 'plain',
+          body: 'Lower realized volatility widened the path to 12% CAGR.',
+          detail: 'The Monte Carlo run reflects a week of lower realized volatility. This is a forecast that moves with market conditions, not a promise about returns.',
+          rows: [['Yesterday', '45%', 'n'], ['Today', '47%', 'n'], ['Model', 'v2.1', 'n'], ['Horizon', '2 years', 'n']] },
+      ] },
+    ];
+    const iconFor = (kind, color) => {
+      const p = kind === 'Risk' ? '<path d="M12 9v4"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 17h.01"></path>'
+        : kind === 'Catalyst' ? '<rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path>'
+        : kind === 'Thesis' ? '<path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>'
+        : '<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9h4"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path><path d="M10 6h8v4h-8V6Z"></path>';
+      return this.svg(p, color, 'none', 2);
+    };
+    const matches = (a) => {
+      if (st.filter === 'All') return true;
+      if (st.filter === 'Risk') return a.kind === 'Risk';
+      if (st.filter === 'Portfolio') return a.scope === 'portfolio';
+      if (st.filter === 'Watchlist') return a.scope === 'watchlist';
+      return true;
+    };
+    const alertDays = alertDefs.map((d) => ({ ...d, items: d.items.filter(matches) }))
+      .filter((d) => d.items.length > 0).map((d) => ({
+      label: d.day,
+      items: d.items.map((a, i) => {
+        const color = a.tone === 'amber' ? t.amber : a.tone === 'accent' ? t.accent : t.dim;
+        const bg = a.tone === 'amber' ? t.amberbg : a.tone === 'accent' ? t.accentbg : t.chipbg;
+        return { title: a.title, body: a.body, time: a.time, rule: this.rule(i, t),
+          rowbg: a.unread ? (t.dark ? 'rgba(96,150,220,0.05)' : 'rgba(43,95,168,0.025)') : 'transparent',
+          iconbg: bg, icon: iconFor(a.kind, color),
+          open: () => this.setState({ sheet: this.alertSheet(a, t) }) };
+      }),
+    }));
+
+    const alertFilters = ['All', 'Portfolio', 'Watchlist', 'Risk'].map((f) => {
+      const on = st.filter === f;
+      return { label: f, weight: on ? 640 : 520,
+        bg: on ? t.accent : 'transparent', fg: on ? '#FFFFFF' : t.dim,
+        border: on ? t.accent : t.hair,
+        pick: () => this.setState({ filter: f }) };
+    });
+
+    // ---- analysis progress ----
+    const stepDefs = ['Reading filings', 'Running valuation', 'Checking relationships', 'Testing portfolio fit'];
+    const check = '<path d="M20 6 9 17l-5-5"></path>';
+    const dot = '<circle cx="12" cy="12" r="3"></circle>';
+    const steps = stepDefs.map((label, i) => {
+      const done = i < st.runStep;
+      const now = i === st.runStep;
+      return { label: label + (done ? '' : now ? '…' : ''),
+        color: done ? t.dim : now ? t.text : t.faint,
+        weight: now ? 620 : 500,
+        icon: this.svg(done ? check : dot, done ? t.good : now ? t.accent : t.chev, done ? 'none' : now ? t.accent : 'none', 2.4) };
+    });
+
+    // ---- resolve sheet ----
+    let sheet = null;
+    if (typeof st.sheet === 'string') sheet = this.sheetFor(st.sheet, t);
+    else if (st.sheet) sheet = st.sheet;
+    if (sheet && sheet.blocks) {
+      sheet = { ...sheet, blocks: sheet.blocks.map((b) => ({
+        heading: b.heading || null, text: b.text || null,
+        textcolor: b.textcolor || t.text,
+        rows: b.rows ? b.rows.map((r, i) => ({ ...r, rule: this.rule(i, t) })) : null })) };
+    }
+
+    // ---- me ----
+    const meDefs = [
+      { title: 'Objective', rows: [
+        { label: 'Target CAGR', val: '12%', sub: 'Objective with a probability, not a promise', key: null },
+        { label: 'Horizon', val: '2 years', sub: null, key: null },
+        { label: 'Risk tolerance', val: 'Moderate', sub: 'Caps any cluster at 35% of portfolio', key: null },
+      ] },
+      { title: 'Notifications', rows: [
+        { label: 'Daily brief', val: '7:30 AM', sub: 'One push, at a time you pick', key: null },
+        { label: 'Material alerts', val: 'On', sub: 'Max 3 per day · quiet hours honoured', key: null },
+        { label: 'Telegram', val: 'Linked', sub: 'Same payload as the push brief', key: null },
+      ] },
+      { title: 'Data', rows: [
+        { label: 'Model versions', val: 'v2.1', sub: 'Ranking v2.1 · valuation v14 · graph 2026-09-05', key: null },
+        { label: 'Sources', val: '4', sub: 'Prices, fundamentals, filings, consensus', key: null },
+      ] },
+    ];
+    const meGroups = meDefs.map((g) => ({ title: g.title,
+      rows: g.rows.map((r, i) => ({ ...r, rule: this.rule(i, t),
+        open: () => this.setState({ sheet: { title: r.label, sub: 'Setting · prototype',
+          blocks: [{ text: (r.sub || 'Editing this setting is out of scope for the prototype.'), textcolor: t.text }],
+          foot: 'Settings are stored per user with row-level security. Research only, not investment advice.' } }) })) }));
+
+    const emptyMsgs = { Portfolio: 'No alerts about your holdings in the last two days.',
+      Watchlist: 'No alerts about watchlist names in the last two days.',
+      Risk: 'No risk-threshold alerts in the last two days.' };
+
+    return {
+      t, screen, tabs, sheet, meGroups,
+      alertsEmpty: alertDays.length === 0,
+      emptyMsg: emptyMsgs[st.filter] || 'Nothing to show for this filter.',
+      clearFilter: () => this.setState({ filter: 'All' }),
+      isToday: st.tab === 'today', isPortfolio: st.tab === 'portfolio',
+      isResearch: st.tab === 'research', isAlerts: st.tab === 'alerts', isMe: st.tab === 'me',
+      catalysts, opps, actions, ranges, subscores, expTabs, donut,
+      expTop: set.top, expNote: set.note, changes, holdings,
+      tk, sections, alertDays, alertFilters, steps, running: st.running,
+      closeSheet: () => this.setState({ sheet: null }),
+      openConcentration: S('concentration'),
+      openMethods: S('methods'),
+      openCompare: S('compare'),
+      addPosition: S('add'),
+      toggleStar: () => this.setState({ starred: !st.starred }),
+      cancelRun: () => { if (this._t) clearInterval(this._t); this.setState({ running: false, runStep: 0 }); },
+      runAnalysis: () => {
+        if (this._t) clearInterval(this._t);
+        this.setState({ running: true, runStep: 0 });
+        this._t = setInterval(() => {
+          const n = this.state.runStep + 1;
+          if (n > 4) { clearInterval(this._t); this.setState({ running: false, runStep: 0, sheet: 'done' }); }
+          else this.setState({ runStep: n });
+        }, 850);
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

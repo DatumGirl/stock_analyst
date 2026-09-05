@@ -1,0 +1,22 @@
+# Local Memgraph for development. Credentials come from the environment;
+# there are no defaults here, so a missing value fails loudly at startup.
+services:
+  memgraph:
+    image: memgraph/memgraph-mage:3.1.1-memgraph-3.1.1
+    ports:
+      - "${MEMGRAPH_PORT:?set MEMGRAPH_PORT}:7687"
+      - "7444:7444"
+    environment:
+      MEMGRAPH_USER: "${MEMGRAPH_USERNAME:?set MEMGRAPH_USERNAME}"
+      MEMGRAPH_PASSWORD: "${MEMGRAPH_PASSWORD:?set MEMGRAPH_PASSWORD}"
+    command: ["--log-level=WARNING", "--also-log-to-stderr"]
+    volumes:
+      - memgraph_data:/var/lib/memgraph
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'RETURN 1;' | mgconsole || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  memgraph_data:

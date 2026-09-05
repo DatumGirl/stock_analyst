@@ -1,0 +1,13 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "StockIntel — light", "is_interactive": true },
+    { "file": "Dark.dc.html", "x": 500, "y": 0, "w": 390, "h": 844, "title": "StockIntel — dark", "is_interactive": true },
+    { "file": "Flow.dc.html", "x": 1000, "y": 0, "w": 760, "h": 560, "title": "Interaction map" }
+  ],
+  "annotations": [
+    { "id": "note-start", "x": 0, "y": -150, "w": 390, "text": "Start here. Tap the bottom tabs to move between Today, Portfolio, Research and Alerts.\n\nOn Research, \"Analyze now\" runs the Chief Analyst progress sequence." },
+    { "id": "note-dark", "x": 500, "y": -150, "w": 390, "text": "Same prototype, dark mode.\n\nEvery artboard is independent — tapping here does not move the light one." },
+    { "id": "note-flow", "x": 1000, "y": -150, "w": 760, "text": "Everything that responds to a tap, and where it leads." }
+  ],
+  "launch": { "view": "focused", "file": "Main.dc.html" }
+}

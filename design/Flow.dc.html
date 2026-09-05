@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #2B5FA8; text-decoration: none; } a:hover { color: #1E4680; }
+    * { box-sizing: border-box; }
+    .num { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 760px; height: 560px; background: #FBFBFC; color: #14171C; padding: 28px 30px; display: flex; flex-direction: column; gap: 20px;">
+
+  <div style="display: flex; flex-direction: column; gap: 5px;">
+    <div style="font-size: 20px; font-weight: 700; letter-spacing: -0.4px;">What's tappable in the prototype</div>
+    <div style="font-size: 13px; line-height: 18px; color: #697280;">Every arrow below is wired in the phone artboard. Tabs switch screens; rows open sheets; the sheets link onward.</div>
+  </div>
+
+  <div style="display: flex; gap: 14px; flex-grow: 1;">
+
+    <sc-for list="{{cols}}" as="c" hint-placeholder-count="4">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 9px;">
+
+        <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 3px;">
+          <div style="width: 22px; height: 22px; border-radius: 6px; background: {{c.tint}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <div class="num" style="font-size: 11px; font-weight: 700; color: {{c.fg}};">{{c.n}}</div>
+          </div>
+          <div style="font-size: 14px; font-weight: 660; letter-spacing: -0.1px;">{{c.title}}</div>
+        </div>
+
+        <div style="font-size: 11.5px; line-height: 16px; color: #697280; min-height: 32px;">{{c.sub}}</div>
+
+        <div style="display: flex; flex-direction: column; gap: 7px;">
+          <sc-for list="{{c.items}}" as="i" hint-placeholder-count="4">
+            <div style="background: #FFFFFF; border: 0.5px solid #E4E7EB; border-left: 2.5px solid {{i.edge}}; border-radius: 9px; padding: 9px 11px; display: flex; flex-direction: column; gap: 3px;">
+              <div style="font-size: 12px; font-weight: 620; letter-spacing: -0.05px;">{{i.label}}</div>
+              <div style="font-size: 11px; line-height: 15px; color: #697280;">{{i.to}}</div>
+            </div>
+          </sc-for>
+        </div>
+
+      </div>
+    </sc-for>
+
+  </div>
+
+  <div style="display: flex; gap: 20px; padding-top: 4px; border-top: 0.5px solid #E4E7EB;">
+    <sc-for list="{{legend}}" as="l" hint-placeholder-count="3">
+      <div style="display: flex; align-items: center; gap: 7px;">
+        <div style="width: 9px; height: 9px; border-radius: 3px; background: {{l.color}};"></div>
+        <div style="font-size: 11px; color: #697280;">{{l.label}}</div>
+      </div>
+    </sc-for>
+    <div style="margin-left: auto; font-size: 10.5px; color: #98A0AC;">Sample data throughout &middot; research only, not investment advice</div>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":760,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const NAV = '#2B5FA8', SHEET = '#B4771A', STATE = '#5B6472';
+    return {
+      legend: [
+        { label: 'Switches screen', color: NAV },
+        { label: 'Opens a sheet', color: SHEET },
+        { label: 'Changes state in place', color: STATE },
+      ],
+      cols: [
+        { n: '1', title: 'Today', tint: 'rgba(43,95,168,0.10)', fg: NAV,
+          sub: 'The home screen. Leads with the conclusion, evidence one tap below.',
+          items: [
+            { label: 'Concentration card', to: 'Sheet: why 37% understates it', edge: SHEET },
+            { label: 'Catalyst rows', to: 'Sheet: MSFT earnings, FOMC', edge: SHEET },
+            { label: 'Opportunity rows', to: 'Research, that ticker loaded', edge: NAV },
+            { label: 'Action-plan rows', to: 'Research, that ticker loaded', edge: NAV },
+          ] },
+        { n: '2', title: 'Portfolio', tint: 'rgba(43,95,168,0.10)', fg: NAV,
+          sub: 'Health, exposure and what changed since yesterday.',
+          items: [
+            { label: 'Period selector', to: '1D · 1W · 1M · YTD · 1Y', edge: STATE },
+            { label: 'Exposure segments', to: 'Sector · Geography · Theme · Hidden', edge: STATE },
+            { label: 'Hidden segment', to: 'Reveals the 49% cluster note', edge: STATE },
+            { label: 'Holding rows', to: 'Sheet: position, thesis, why', edge: SHEET },
+            { label: 'Add', to: 'Sheet: add-position fields', edge: SHEET },
+          ] },
+        { n: '3', title: 'Research', tint: 'rgba(43,95,168,0.10)', fg: NAV,
+          sub: 'Ticker detail. Verdict first, then the evidence that backs it.',
+          items: [
+            { label: 'Ticker pills', to: 'AAPL · MSFT · NVDA · UNH', edge: STATE },
+            { label: 'Star', to: 'Toggles watchlist', edge: STATE },
+            { label: 'Fair-value band', to: 'Sheet: five methods, each a range', edge: SHEET },
+            { label: 'Section headers', to: 'Expand earnings, news, technicals, fit', edge: STATE },
+            { label: 'Analyze now', to: 'Progress steps → result sheet', edge: SHEET },
+            { label: 'Compare', to: 'Sheet: AAPL vs MSFT vs NVDA', edge: SHEET },
+          ] },
+        { n: '4', title: 'Alerts', tint: 'rgba(43,95,168,0.10)', fg: NAV,
+          sub: 'Material events only. The fifth tab, Me, holds goals and the disclaimer.',
+          items: [
+            { label: 'Filter chips', to: 'All · Portfolio · Watchlist · Risk — all four filter', edge: STATE },
+            { label: 'Alert rows', to: 'Sheet: detail plus evidence table', edge: SHEET },
+            { label: 'Empty state', to: 'Filter to Watchlist on Yesterday', edge: STATE },
+            { label: 'Me tab', to: 'Objective, notifications, disclaimer', edge: NAV },
+          ] },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
