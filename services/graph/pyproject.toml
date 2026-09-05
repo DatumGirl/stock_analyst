@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Relationship intelligence over Memgraph for the StockIntel platform"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
     "gqlalchemy>=1.6,<2.0",
+    "python-dotenv>=1.0.0",
+    "yfinance>=0.2.40",
 ]
 
 [project.optional-dependencies]

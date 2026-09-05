@@ -1,5 +1,8 @@
-# Local Memgraph for development. Credentials come from the environment;
-# there are no defaults here, so a missing value fails loudly at startup.
+# Local Memgraph — only needed when NOT using Memgraph Cloud.
+# Production and the current dev environment use Memgraph Cloud
+# (MEMGRAPH_HOST=3.17.133.104, MEMGRAPH_ENCRYPTED=true in .env.local).
+# Run this only if you need a local offline instance:
+#   docker compose up -d
 services:
   memgraph:
     image: memgraph/memgraph-mage:3.1.1-memgraph-3.1.1
