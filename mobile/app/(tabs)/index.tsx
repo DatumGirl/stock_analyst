@@ -128,30 +128,34 @@ export default function TodayScreen() {
             )}
 
             {/* Opportunities */}
-            {brief.opportunities.length > 0 && (
-              <>
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Opportunities</Text>
-                <View style={styles.list}>
-                  {brief.opportunities.slice(0, 5).map((opp) => (
-                    <Pressable
-                      key={opp.ticker}
-                      style={[styles.oppCard, { backgroundColor: colors.card }]}
-                      onPress={() => router.push(`/ticker/${opp.ticker}`)}
-                    >
-                      <View style={[styles.scoreBadge, { backgroundColor: colors.accent + '22' }]}>
-                        <Text style={[styles.scoreText, { color: colors.accent }]}>{opp.score}</Text>
-                      </View>
-                      <View style={styles.oppContent}>
-                        <Text style={[styles.oppTicker, { color: colors.textPrimary }]}>{opp.ticker}</Text>
-                        <Text style={[styles.oppThesis, { color: colors.textSecondary }]} numberOfLines={2}>
-                          {opp.one_line_thesis}
-                        </Text>
-                      </View>
-                      <ActionPill action={opp.action} size="sm" />
-                    </Pressable>
-                  ))}
-                </View>
-              </>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Opportunities</Text>
+            {brief.opportunities.length === 0 ? (
+              <View style={[styles.calmCard, { backgroundColor: colors.card }]}>
+                <Text style={[styles.calmText, { color: colors.textSecondary }]}>
+                  No high-probability opportunities identified today.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.list}>
+                {brief.opportunities.slice(0, 5).map((opp) => (
+                  <Pressable
+                    key={opp.ticker}
+                    style={[styles.oppCard, { backgroundColor: colors.card }]}
+                    onPress={() => router.push(`/ticker/${opp.ticker}`)}
+                  >
+                    <View style={[styles.scoreBadge, { backgroundColor: colors.accent + '22' }]}>
+                      <Text style={[styles.scoreText, { color: colors.accent }]}>{opp.score}</Text>
+                    </View>
+                    <View style={styles.oppContent}>
+                      <Text style={[styles.oppTicker, { color: colors.textPrimary }]}>{opp.ticker}</Text>
+                      <Text style={[styles.oppThesis, { color: colors.textSecondary }]} numberOfLines={2}>
+                        {opp.one_line_thesis}
+                      </Text>
+                    </View>
+                    <ActionPill action={opp.action} size="sm" />
+                  </Pressable>
+                ))}
+              </View>
             )}
 
             {/* Tomorrow's action plan */}

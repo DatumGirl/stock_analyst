@@ -42,7 +42,13 @@ export default function PortfolioScreen() {
 
   const isLoading = snapLoading || changesLoading;
 
-  const exposures = snapshot?.exposures?.[exposureTab.toLowerCase() as 'sector' | 'geography' | 'theme'];
+  // Handle both nested ({sector: {...}}) and legacy flat ({Technology: 0.45}) structures
+  const rawExp = snapshot?.exposures as any;
+  const exposures = rawExp != null
+    ? (typeof rawExp.sector === 'object'
+        ? rawExp[exposureTab.toLowerCase() as 'sector' | 'geography' | 'theme']
+        : exposureTab === 'Sector' ? rawExp : undefined)
+    : undefined;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>

@@ -135,7 +135,7 @@ export default function TickerScreen() {
         )}
 
         {/* Fair value */}
-        {analysis?.valuation_range && (
+        {analysis && (
           <CollapsibleSection
             title="Fair value"
             sectionKey="valuation"
@@ -144,17 +144,25 @@ export default function TickerScreen() {
             colors={colors}
             badge={<ForecastPill />}
           >
-            <RangeBar
-              low={parseFloat(analysis.valuation_range.low)}
-              base={parseFloat(analysis.valuation_range.base)}
-              high={parseFloat(analysis.valuation_range.high)}
-              bear={parseFloat(analysis.valuation_range.bear)}
-              bull={parseFloat(analysis.valuation_range.bull)}
-              current={quote ? parseFloat(quote.price) : undefined}
-            />
-            <Text style={[styles.methodLabel, { color: colors.textMuted }]}>
-              Method: {analysis.valuation_range.method.toUpperCase()} · {analysis.valuation_range.source}
-            </Text>
+            {analysis.valuation_range ? (
+              <>
+                <RangeBar
+                  low={parseFloat(analysis.valuation_range.low)}
+                  base={parseFloat(analysis.valuation_range.base)}
+                  high={parseFloat(analysis.valuation_range.high)}
+                  bear={parseFloat(analysis.valuation_range.bear)}
+                  bull={parseFloat(analysis.valuation_range.bull)}
+                  current={quote ? parseFloat(quote.price) : undefined}
+                />
+                <Text style={[styles.methodLabel, { color: colors.textMuted }]}>
+                  Method: {analysis.valuation_range.method.toUpperCase()} · {analysis.valuation_range.source}
+                </Text>
+              </>
+            ) : (
+              <Text style={[styles.methodLabel, { color: colors.textMuted }]}>
+                Insufficient fundamental data to compute a valuation range for this ticker.
+              </Text>
+            )}
           </CollapsibleSection>
         )}
 

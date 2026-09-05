@@ -135,12 +135,19 @@ async def compute_snapshot(portfolio_id: str) -> dict[str, Any]:
         sector = ticker_sector.get(ticker, "Unknown")
         sector_values[sector] = sector_values.get(sector, 0.0) + value
 
-    exposures: dict[str, float] = {}
+    sector_pcts: dict[str, float] = {}
     if total_value > 0:
-        exposures = {
+        sector_pcts = {
             sector: round(value / total_value, 4)
             for sector, value in sector_values.items()
         }
+
+    exposures: dict = {
+        "sector": sector_pcts,
+        "geography": {},
+        "theme": {},
+        "hidden": [],
+    }
 
     # ── Health score (simplified until ML pipeline is live) ──────────────────
     n = len(positions)
