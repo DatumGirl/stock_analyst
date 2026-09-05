@@ -57,9 +57,11 @@ function Sparkline({ prices, positive, width = 120, height = 48 }: {
   const path = buildPath(prices, width, height);
   const color = positive ? colors.green : colors.red;
   return (
-    <Svg width={width} height={height}>
-      {path ? <Path d={path} stroke={color} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" /> : null}
-    </Svg>
+    <View pointerEvents="none">
+      <Svg width={width} height={height}>
+        {path ? <Path d={path} stroke={color} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" /> : null}
+      </Svg>
+    </View>
   );
 }
 
@@ -94,7 +96,7 @@ export function MarketChart() {
   return (
     <View style={styles.root}>
       {/* Exchange selector */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chipRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chipRow} scrollsToTop={false}>
         {EXCHANGES.map((ex) => {
           const active = selectedKeys.includes(ex.key);
           return (
