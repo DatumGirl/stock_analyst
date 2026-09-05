@@ -10,6 +10,8 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
+create schema if not exists _private;
+
 -- ─── Helper: call a Supabase Edge Function ────────────────────────────────────
 create or replace function _private.call_edge_function(
     fn_name text,
