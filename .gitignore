@@ -1,0 +1,24 @@
+# Secrets
+.env
+.env.*
+!.env.example
+supabase/.temp/
+
+# iOS
+ios/**/xcuserdata/
+ios/**/DerivedData/
+ios/**/*.xcuserstate
+ios/**/.build/
+
+# Python
+services/**/__pycache__/
+services/**/.venv/
+services/**/*.pyc
+services/**/.mypy_cache/
+services/**/.pytest_cache/
+
+# Node / Deno
+node_modules/
+
+# OS
+.DS_Store
