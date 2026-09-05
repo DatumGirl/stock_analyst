@@ -36,6 +36,8 @@ export default function TodayScreen() {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.accent} />}
         showsVerticalScrollIndicator={false}
+        directionalLockEnabled={true}
+        alwaysBounceVertical={true}
       >
         {/* Nav bar */}
         <View style={styles.nav}>

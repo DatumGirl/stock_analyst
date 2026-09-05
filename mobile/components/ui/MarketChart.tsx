@@ -96,7 +96,7 @@ export function MarketChart() {
   return (
     <View style={styles.root}>
       {/* Exchange selector */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chipRow} scrollsToTop={false}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chipRow} scrollsToTop={false} directionalLockEnabled={true}>
         {EXCHANGES.map((ex) => {
           const active = selectedKeys.includes(ex.key);
           return (
